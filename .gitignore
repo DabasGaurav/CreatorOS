@@ -9,4 +9,5 @@ __pycache__/
 htmlcov/
 *.log
 .DS_Store
+.tester_invites.json
 uv.lock.bak

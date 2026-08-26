@@ -12,13 +12,26 @@ from datetime import UTC, datetime
 
 from fastapi import BackgroundTasks, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import RedirectResponse
 from pydantic import BaseModel
 
-from creatoros.auth.magic_link import request_magic_link, verify_magic_link_token
+from creatoros.auth.magic_link import request_magic_link, resolve_session, verify_magic_link_token
+from creatoros.config import get_settings
 from creatoros.db.base import get_session
 from creatoros.db.models import Creator, CreatorDNA, Outcome, Recommendation
+from creatoros.dna.job import compute_and_store_dna
+from creatoros.embeddings.job import embed_and_upsert_all_reels_for_creator
 from creatoros.embeddings.qdrant_client import get_client
 from creatoros.graph.pipeline import build_pipeline
+from creatoros.instagram.client import GraphAPIClient
+from creatoros.instagram.oauth import (
+    build_authorize_url,
+    compute_expiry,
+    exchange_code_for_token,
+    exchange_short_for_long_lived_token,
+)
+from creatoros.instagram.repository import attach_instagram_account
+from creatoros.instagram.sync import sync_creator_history
 from creatoros.utils.logging import get_logger
 
 logger = get_logger(__name__)
@@ -214,6 +227,92 @@ def verify_link(request: VerifyMagicLinkRequest) -> VerifyMagicLinkResponse:
         session.close()
 
 
+def _onboard_after_connect(creator_id: uuid.UUID) -> None:
+    """Initial Creator DNA build "runs in the background" during onboarding
+    (Build Doc 3 §2.2) — pulls history, embeds it, computes the first DNA
+    version. Best-effort: a fresh Instagram connection may have zero or very
+    few Reels, which every step here already handles gracefully (Build Doc 1)."""
+    session = get_session()
+    try:
+        creator = session.get(Creator, creator_id)
+        if creator is None:
+            return
+        sync_creator_history(session, creator)
+        qdrant = get_client()
+        embed_and_upsert_all_reels_for_creator(session, qdrant, creator_id)
+        compute_and_store_dna(session, qdrant, creator)
+    except Exception:
+        logger.exception("Post-connect onboarding job failed for creator %s", creator_id)
+    finally:
+        session.close()
+
+
+@app.get("/auth/instagram/authorize")
+def instagram_authorize(session_token: str) -> RedirectResponse:
+    """The session token doubles as the OAuth `state` — resolve_session on the
+    callback proves it's a live, real session, which is exactly what a
+    separate CSRF nonce would otherwise be for (a session token is already an
+    unguessable 32-byte random value)."""
+    session = get_session()
+    try:
+        if resolve_session(session, session_token) is None:
+            raise HTTPException(status_code=401, detail="Invalid or expired session")
+    finally:
+        session.close()
+
+    return RedirectResponse(build_authorize_url(session_token))
+
+
+@app.get("/auth/instagram/callback")
+def instagram_callback(
+    background_tasks: BackgroundTasks,
+    code: str | None = None,
+    state: str | None = None,
+    error: str | None = None,
+    error_description: str | None = None,
+) -> RedirectResponse:
+    settings = get_settings()
+    frontend_url = settings.frontend_base_url
+
+    if error or not code or not state:
+        detail = error_description or error or "missing code"
+        logger.warning("Instagram OAuth callback error: %s", detail)
+        return RedirectResponse(f"{frontend_url}/?instagram_error={detail}")
+
+    session = get_session()
+    try:
+        db_session = resolve_session(session, state)
+        if db_session is None:
+            return RedirectResponse(f"{frontend_url}/?instagram_error=session_expired")
+
+        try:
+            short_lived = exchange_code_for_token(code)
+            long_lived = exchange_short_for_long_lived_token(short_lived["access_token"])
+            access_token = long_lived["access_token"]
+            expires_at = compute_expiry(long_lived.get("expires_in", 60 * 24 * 60 * 60))
+            ig_user_id = str(short_lived["user_id"])
+
+            with GraphAPIClient(access_token) as client:
+                profile = client.get_account_profile(ig_user_id)
+
+            attach_instagram_account(
+                session,
+                creator_id=db_session.creator_id,
+                instagram_user_id=ig_user_id,
+                display_name=profile.get("username", ig_user_id),
+                access_token=access_token,
+                token_expires_at=expires_at,
+            )
+        except Exception:
+            logger.exception("Instagram connect failed for creator %s", db_session.creator_id)
+            return RedirectResponse(f"{frontend_url}/?instagram_error=connect_failed")
+    finally:
+        session.close()
+
+    background_tasks.add_task(_onboard_after_connect, db_session.creator_id)
+    return RedirectResponse(f"{frontend_url}/?connected=1")
+
+
 @app.get("/creators/{creator_id}")
 def get_creator(creator_id: uuid.UUID) -> dict:
     session = get_session()
@@ -232,6 +331,7 @@ def get_creator(creator_id: uuid.UUID) -> dict:
             "id": creator.id,
             "display_name": creator.display_name,
             "niche": creator.niche,
+            "instagram_connected": creator.instagram_user_id is not None,
             "dna": _dna_to_dict(latest_dna) if latest_dna else None,
         }
     finally:

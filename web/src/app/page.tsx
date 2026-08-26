@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { createRecommendation, getCreator, getRecommendation } from "@/lib/api";
 import { clearSession, getSession } from "@/lib/session";
 import type { Creator, CreatorDNA, Recommendation } from "@/lib/types";
+import ConnectInstagram from "@/components/ConnectInstagram";
 import CreatorDNASummary from "@/components/CreatorDNASummary";
 import EmptyState from "@/components/EmptyState";
 import LoadingState from "@/components/LoadingState";
@@ -21,11 +22,12 @@ function CoreScreen() {
   // this client component mounts (it's under Suspense from useSearchParams),
   // window/localStorage are already available, so there's no async gap to
   // bridge with an effect.
-  const [creatorId] = useState<string | null>(() => {
-    const fromParam = searchParams.get("creator");
-    if (fromParam) return fromParam;
-    return getSession()?.creator_id ?? null;
-  });
+  const [session] = useState(() => getSession());
+  const [creatorId] = useState<string | null>(
+    () => searchParams.get("creator") ?? session?.creator_id ?? null,
+  );
+  const instagramError = searchParams.get("instagram_error");
+  const justConnected = searchParams.get("connected") === "1";
 
   const [creator, setCreator] = useState<Creator | null>(null);
   const [dna, setDna] = useState<CreatorDNA | null>(null);
@@ -119,30 +121,48 @@ function CoreScreen() {
           Sign out
         </button>
       </div>
-      <div className="mb-8">{creator && <CreatorDNASummary creator={creator} dna={dna} />}</div>
 
-      {error && <p className="mb-4 font-body text-sm text-alert-coral">{error}</p>}
+      {creator && !creator.instagram_connected ? (
+        <>
+          {session && (
+            <ConnectInstagram sessionToken={session.session_token} error={instagramError} />
+          )}
+        </>
+      ) : (
+        <>
+          <div className="mb-8">{creator && <CreatorDNASummary creator={creator} dna={dna} />}</div>
 
-      {!recommendation && <EmptyState onGenerate={handleGenerate} disabled={!creator} />}
+          {justConnected && !recommendation && (
+            <p className="mb-4 font-body text-sm text-explore-teal">
+              Instagram connected — building your Creator DNA in the background. This can take a
+              minute; refresh if it&apos;s not showing yet.
+            </p>
+          )}
 
-      {isBusy && <LoadingState stage={recommendation?.current_stage ?? null} />}
+          {error && <p className="mb-4 font-body text-sm text-alert-coral">{error}</p>}
 
-      {isFailed && (
-        <div className="mx-auto max-w-sm space-y-4 text-center">
-          <p className="font-body text-sm text-alert-coral">
-            Something went wrong: {recommendation?.error ?? "unknown error"}
-          </p>
-          <button
-            type="button"
-            onClick={() => setRecommendation(null)}
-            className="rounded-md bg-surface-raised px-4 py-2 font-body text-sm text-ink"
-          >
-            Try again
-          </button>
-        </div>
+          {!recommendation && <EmptyState onGenerate={handleGenerate} disabled={!creator} />}
+
+          {isBusy && <LoadingState stage={recommendation?.current_stage ?? null} />}
+
+          {isFailed && (
+            <div className="mx-auto max-w-sm space-y-4 text-center">
+              <p className="font-body text-sm text-alert-coral">
+                Something went wrong: {recommendation?.error ?? "unknown error"}
+              </p>
+              <button
+                type="button"
+                onClick={() => setRecommendation(null)}
+                className="rounded-md bg-surface-raised px-4 py-2 font-body text-sm text-ink"
+              >
+                Try again
+              </button>
+            </div>
+          )}
+
+          {isDone && recommendation && <RecommendationCard recommendation={recommendation} />}
+        </>
       )}
-
-      {isDone && recommendation && <RecommendationCard recommendation={recommendation} />}
     </main>
   );
 }

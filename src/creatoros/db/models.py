@@ -22,13 +22,23 @@ def _uuid() -> uuid.UUID:
 
 
 class Creator(Base):
-    """A connected Instagram creator. `token` is Fernet ciphertext, never plaintext."""
+    """A creator, possibly not yet connected to Instagram. `token` is Fernet
+    ciphertext, never plaintext.
+
+    Build Doc 3's real onboarding order is: founder invites by email (creates
+    this row with email+niche only) -> creator signs in via magic link ->
+    creator clicks "Connect Instagram" in the web app, which fills in
+    instagram_user_id/display_name/token. The Instagram-specific columns are
+    nullable to represent that "invited but not yet connected" state — every
+    job that needs them (sync, DNA, ranking) is only ever invoked after
+    connection completes, so their nullability doesn't leak into that code.
+    """
 
     __tablename__ = "creators"
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=_uuid)
-    instagram_user_id: Mapped[str] = mapped_column(String, unique=True, nullable=False)
-    display_name: Mapped[str] = mapped_column(String, nullable=False)
+    instagram_user_id: Mapped[str | None] = mapped_column(String, unique=True, nullable=True)
+    display_name: Mapped[str | None] = mapped_column(String, nullable=True)
     niche: Mapped[str] = mapped_column(String, nullable=False)
 
     # Build Doc 3 magic-link auth — nullable since Build Doc 1/2 creators were
@@ -37,8 +47,10 @@ class Creator(Base):
     connected_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
-    token: Mapped[str] = mapped_column(String, nullable=False)
-    token_expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    token: Mapped[str | None] = mapped_column(String, nullable=True)
+    token_expires_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
 
     # Not in the spec's minimum schema. `primary_kpi` is described as "creator-selected at
     # onboarding" but Build Doc 1 has no onboarding UI to collect it — nullable now, populated

@@ -16,6 +16,44 @@ def get_latest_insight(session: Session, reel_id: uuid.UUID) -> ReelInsight | No
     )
 
 
+def invite_creator(session: Session, *, email: str, niche: str) -> Creator:
+    """Founder-initiated invite (Build Doc 3 onboarding) — creates a bare
+    creator row with just email+niche, matching the spec's beta model where
+    the founder adds each creator individually rather than public self-serve
+    signup (A5). instagram_user_id/token stay null until the creator signs in
+    and clicks "Connect Instagram" themselves."""
+    creator = Creator(email=email, niche=niche)
+    session.add(creator)
+    session.commit()
+    session.refresh(creator)
+    return creator
+
+
+def attach_instagram_account(
+    session: Session,
+    *,
+    creator_id: uuid.UUID,
+    instagram_user_id: str,
+    display_name: str,
+    access_token: str,
+    token_expires_at: datetime,
+) -> Creator:
+    """Fills in the Instagram fields on an already-invited creator (matched by
+    creator_id from their signed-in session), as opposed to upsert_creator's
+    match-by-instagram_user_id (used by the CLI connect script for the older
+    founder-runs-the-script flow, Build Doc 1)."""
+    creator = session.get(Creator, creator_id)
+    if creator is None:
+        raise ValueError(f"No creator with id {creator_id}")
+    creator.instagram_user_id = instagram_user_id
+    creator.display_name = display_name
+    creator.token = encrypt_token(access_token)
+    creator.token_expires_at = token_expires_at
+    session.commit()
+    session.refresh(creator)
+    return creator
+
+
 def upsert_creator(
     session: Session,
     *,

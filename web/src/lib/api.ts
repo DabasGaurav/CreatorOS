@@ -49,6 +49,10 @@ export function requestMagicLink(email: string): Promise<{ detail: string }> {
   });
 }
 
+export function instagramAuthorizeUrl(sessionToken: string): string {
+  return `${API_BASE_URL}/auth/instagram/authorize?session_token=${encodeURIComponent(sessionToken)}`;
+}
+
 export function verifyMagicLink(
   token: string,
 ): Promise<{ session_token: string; creator_id: string }> {

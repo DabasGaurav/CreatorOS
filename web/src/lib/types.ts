@@ -75,6 +75,7 @@ export interface CreatorDNA {
 
 export interface Creator {
   id: string;
-  display_name: string;
+  display_name: string | null;
   niche: string;
+  instagram_connected: boolean;
 }

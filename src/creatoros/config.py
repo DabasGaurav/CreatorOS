@@ -10,7 +10,7 @@ class Settings(BaseSettings):
     # Meta / Instagram Graph API
     meta_app_id: str = ""
     meta_app_secret: str = ""
-    meta_oauth_redirect_uri: str = "http://localhost:8765/callback"
+    meta_oauth_redirect_uri: str = "http://localhost:8000/auth/instagram/callback"
     graph_api_version: str = "v23.0"
 
     # Postgres

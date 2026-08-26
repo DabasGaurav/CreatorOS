@@ -34,3 +34,24 @@ uv run pytest -m integration  # requires real Postgres/Meta/Voyage/Qdrant creden
 ```bash
 uv run python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
 ```
+
+## Status
+
+All of Build Doc 1's logic is written and unit-tested (102 tests, no live credentials
+required) — data model, migrations, token encryption, `niche_signal` CLI, Instagram
+Graph API client/OAuth/sync/token-refresh, Voyage+Qdrant embeddings with
+CreatorFit/PersonalNovelty, and the Creator DNA aggregation job. What's blocked on
+external accounts (`.env` values above) before the Definition of Done can be verified
+end-to-end:
+
+1. `uv run alembic upgrade head` — apply the schema to a real Neon Postgres.
+2. `uv run python scripts/seed_niche_signal.py add ...` — closes the `niche_signal` DoD
+   item immediately once Postgres exists (no Instagram/Voyage/Qdrant dependency).
+3. `uv run python scripts/connect_creator.py --niche "..."` — OAuth-connect a real
+   Instagram Business/Creator account (needs the Meta app + Tester invite accepted).
+4. `uv run python scripts/run_sync.py --instagram-user-id ...` — pull real history.
+5. `uv run python scripts/run_dna.py --instagram-user-id ...` — compute the first
+   real Creator DNA version (needs Voyage/Qdrant for the embeddings it reads).
+
+Once all five Definition-of-Done checks in the build doc pass, Build Doc 2 (the
+on-demand recommendation engine) can start.

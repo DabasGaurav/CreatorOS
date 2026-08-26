@@ -11,6 +11,7 @@ import uuid
 from datetime import UTC, datetime
 
 from fastapi import BackgroundTasks, FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from creatoros.db.base import get_session
@@ -21,6 +22,30 @@ from creatoros.utils.logging import get_logger
 
 logger = get_logger(__name__)
 app = FastAPI(title="CreatorOS Recommendation Engine")
+
+# Beta scale — the frontend runs on a different origin/port than this API.
+# Locked to localhost dev origins now; tighten to the real deployed frontend
+# origin once Build Doc 3's web app is deployed.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],
+    allow_methods=["GET", "POST"],
+    allow_headers=["Content-Type"],
+)
+
+# Maps LangGraph node names to the spec's UI-facing loading-state vocabulary
+# (C4: "research -> candidates -> ranked -> selected -> written"). baselines
+# and rerank don't get their own UI stage — they complete within "ranked" and
+# "selected" respectively from the creator's point of view.
+_NODE_TO_STAGE = {
+    "research": "research",
+    "opportunity": "candidates",
+    "ranking": "ranked",
+    "baselines": "ranked",
+    "explore_exploit": "selected",
+    "rerank": "selected",
+    "content": "written",
+}
 
 
 class CreateRecommendationRequest(BaseModel):
@@ -53,15 +78,27 @@ def _run_pipeline_and_store(
 
         qdrant = get_client()
         pipeline = build_pipeline(session, qdrant)
-        result = pipeline.invoke(
+
+        # Stream rather than invoke so current_stage can be updated as each real
+        # node completes (C4: a progressively filling frame outline, not a
+        # spinner) — genuine progress, not a simulated animation.
+        result: dict = {}
+        for step in pipeline.stream(
             {
                 "creator_id": str(creator_id),
                 "request_id": str(recommendation_id),
                 "niche": creator.niche,
                 "objective": objective,
                 "creator_dna": creator_dna,
-            }
-        )
+            },
+            stream_mode="updates",
+        ):
+            for node_name, partial_state in step.items():
+                result.update(partial_state)
+                stage = _NODE_TO_STAGE.get(node_name)
+                if stage:
+                    row.current_stage = stage
+                    session.commit()
 
         selection = result["selection"]
         row.topic = selection.get("topic")
@@ -113,17 +150,25 @@ def _dna_to_dict(dna: CreatorDNA) -> dict:
 def create_recommendation(
     request: CreateRecommendationRequest, background_tasks: BackgroundTasks
 ) -> CreateRecommendationResponse:
+    # Every endpoint here must close its session on every exit path, including
+    # raised HTTPExceptions — a live run showed the two GET endpoints leaking a
+    # connection per request with no close() at all. At a 2s frontend poll
+    # interval this exhausted the pool (5 + 10 overflow) within minutes and
+    # starved the background pipeline task of a connection, which looked like
+    # the pipeline being "stuck" but was actually connection-pool exhaustion.
     session = get_session()
-    creator = session.get(Creator, request.creator_id)
-    if creator is None:
-        raise HTTPException(status_code=404, detail="Creator not found")
+    try:
+        creator = session.get(Creator, request.creator_id)
+        if creator is None:
+            raise HTTPException(status_code=404, detail="Creator not found")
 
-    row = Recommendation(creator_id=request.creator_id, status="pending")
-    session.add(row)
-    session.commit()
-    session.refresh(row)
-    recommendation_id = row.id
-    session.close()
+        row = Recommendation(creator_id=request.creator_id, status="pending")
+        session.add(row)
+        session.commit()
+        session.refresh(row)
+        recommendation_id = row.id
+    finally:
+        session.close()
 
     background_tasks.add_task(
         _run_pipeline_and_store, recommendation_id, request.creator_id, request.objective
@@ -131,25 +176,62 @@ def create_recommendation(
     return CreateRecommendationResponse(request_id=recommendation_id, status="pending")
 
 
+@app.get("/creators/{creator_id}")
+def get_creator(creator_id: uuid.UUID) -> dict:
+    session = get_session()
+    try:
+        creator = session.get(Creator, creator_id)
+        if creator is None:
+            raise HTTPException(status_code=404, detail="Creator not found")
+
+        latest_dna = (
+            session.query(CreatorDNA)
+            .filter(CreatorDNA.creator_id == creator_id)
+            .order_by(CreatorDNA.version.desc())
+            .first()
+        )
+        return {
+            "id": creator.id,
+            "display_name": creator.display_name,
+            "niche": creator.niche,
+            "dna": _dna_to_dict(latest_dna) if latest_dna else None,
+        }
+    finally:
+        session.close()
+
+
 @app.get("/recommendations/{request_id}")
 def get_recommendation(request_id: uuid.UUID) -> dict:
     session = get_session()
-    row = session.get(Recommendation, request_id)
-    if row is None:
-        raise HTTPException(status_code=404, detail="Recommendation not found")
+    try:
+        row = session.get(Recommendation, request_id)
+        if row is None:
+            raise HTTPException(status_code=404, detail="Recommendation not found")
 
-    return {
-        "request_id": row.id,
-        "status": row.status,
-        "error": row.error,
-        "topic": row.topic,
-        "angle": row.angle,
-        "format": row.format,
-        "composite_score": row.composite_score,
-        "evidence_breakdown": row.evidence_breakdown,
-        "selection_type": row.selection_type,
-        "content_package": row.content_package,
-        "baseline_picks": row.baseline_picks,
-        "created_at": row.created_at,
-        "completed_at": row.completed_at,
-    }
+        return {
+            "request_id": row.id,
+            "status": row.status,
+            "current_stage": row.current_stage,
+            "error": row.error,
+            "topic": row.topic,
+            "angle": row.angle,
+            "format": row.format,
+            # SQLAlchemy Numeric columns serialize to JSON *strings* under
+            # FastAPI's default encoder (Decimal-safe by default), unlike the
+            # plain floats already inside evidence_breakdown's JSONB — an
+            # inconsistent API contract that crashed the frontend's
+            # score.toFixed(2) with "not a function" on a real live run.
+            # Cast explicitly so every numeric field in this response is
+            # actually a JSON number.
+            "composite_score": (
+                float(row.composite_score) if row.composite_score is not None else None
+            ),
+            "evidence_breakdown": row.evidence_breakdown,
+            "selection_type": row.selection_type,
+            "content_package": row.content_package,
+            "baseline_picks": row.baseline_picks,
+            "created_at": row.created_at,
+            "completed_at": row.completed_at,
+        }
+    finally:
+        session.close()

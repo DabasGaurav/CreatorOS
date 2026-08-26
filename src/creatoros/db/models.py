@@ -156,6 +156,12 @@ class Recommendation(Base):
     status: Mapped[str] = mapped_column(String, nullable=False, default="pending")
     error: Mapped[str | None] = mapped_column(String, nullable=True)
 
+    # Updated as each LangGraph node completes (Build Doc 3 C4: the loading state
+    # "fills progressively as pipeline stages complete... giving the creator a
+    # sense of real evaluation happening, not a spinner") — genuine stage
+    # reporting, not a simulated progress bar.
+    current_stage: Mapped[str | None] = mapped_column(String, nullable=True)
+
     topic: Mapped[str | None] = mapped_column(String, nullable=True)
     angle: Mapped[str | None] = mapped_column(String, nullable=True)
     format: Mapped[str | None] = mapped_column(String, nullable=True)

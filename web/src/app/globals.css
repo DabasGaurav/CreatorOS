@@ -1,0 +1,79 @@
+@import "tailwindcss";
+
+/* CreatorOS design tokens (Build Doc 3, Part C) — a single, deliberate dark
+   visual identity, not a light/dark toggle. Canvas is near-black graphite,
+   not pure black, so the reel-frame card reads as an object sitting on it.
+
+   Private vars (this block) hold the literal values; @theme inline maps them
+   to the theme-facing names Tailwind generates utilities from (e.g.
+   border-signal-amber). Naming both sides the same is circular and silently
+   produces no utilities at all — caught by visually inspecting the rendered
+   page, where every custom color fell back to the global border-color reset. */
+:root {
+  --canvas: #0e0e12;
+  --surface: #191920;
+  --surface-raised: #232330;
+  --ink: #f2f1ed;
+  --ink-muted: #9a97a6;
+  --signal-amber: #e8a33d;
+  --explore-teal: #3dbfa8;
+  --alert-coral: #e85d5d;
+}
+
+@theme inline {
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+  --color-signal-amber: var(--signal-amber);
+  --color-explore-teal: var(--explore-teal);
+  --color-alert-coral: var(--alert-coral);
+
+  --font-display: var(--font-space-grotesk);
+  --font-body: var(--font-inter);
+  --font-utility: var(--font-plex-mono);
+}
+
+/* Must be inside @layer base — CSS Cascade Layers give ANY unlayered rule
+   priority over ALL layered rules regardless of specificity, so an unlayered
+   `* { border-color }` silently beats every Tailwind border-* utility
+   (border-signal-amber, border-explore-teal, ...) no matter how specific.
+   This is what actually broke every custom border color in this file until
+   caught by inspecting computed styles in the browser, not just the source. */
+@layer base {
+  * {
+    border-color: var(--surface-raised);
+  }
+}
+
+body {
+  background: var(--canvas);
+  color: var(--ink);
+  font-family: var(--font-inter), sans-serif;
+}
+
+/* Evidence Receipt stagger — C5: sequential ~60ms per line once the score
+   resolves, disabled under prefers-reduced-motion (finished state shown
+   immediately). */
+@keyframes receipt-line-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.receipt-line {
+  animation: receipt-line-in 220ms ease-out both;
+  animation-delay: calc(var(--line-index, 0) * 60ms);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .receipt-line {
+    animation: none;
+  }
+}

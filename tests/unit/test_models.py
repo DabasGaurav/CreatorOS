@@ -12,6 +12,7 @@ def test_expected_tables_registered():
         "recommendations",
         "feature_snapshots",
         "external_result_cache",
+        "outcomes",
     }
 
 

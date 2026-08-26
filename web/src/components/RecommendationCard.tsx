@@ -1,6 +1,7 @@
 import type { Recommendation } from "@/lib/types";
 import ScoreBadge from "./ScoreBadge";
 import EvidenceReceipt from "./EvidenceReceipt";
+import OutcomeReceipt from "./OutcomeReceipt";
 import ContentPackageSection from "./ContentPackageSection";
 
 export default function RecommendationCard({ recommendation }: { recommendation: Recommendation }) {
@@ -38,6 +39,7 @@ export default function RecommendationCard({ recommendation }: { recommendation:
             evidence={recommendation.evidence_breakdown}
             accentClassName={accentClassName}
           />
+          {recommendation.outcome && <OutcomeReceipt outcome={recommendation.outcome} />}
           <div className="space-y-3 px-1">
             {recommendation.evidence_breakdown.why_now && (
               <div>

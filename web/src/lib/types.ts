@@ -34,6 +34,13 @@ export interface ContentPackage {
   cta: string;
 }
 
+export interface Outcome {
+  topic_match_score: number | null;
+  actual_engagement_rate: number | null;
+  predicted_engagement: number | null;
+  detected_at: string;
+}
+
 export interface Recommendation {
   request_id: string;
   status: RecommendationStatus;
@@ -49,6 +56,7 @@ export interface Recommendation {
   baseline_picks: Record<string, string | null> | null;
   created_at: string;
   completed_at: string | null;
+  outcome: Outcome | null;
 }
 
 export interface CreatorDNATopic {

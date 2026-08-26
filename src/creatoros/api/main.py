@@ -15,7 +15,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from creatoros.db.base import get_session
-from creatoros.db.models import Creator, CreatorDNA, Recommendation
+from creatoros.db.models import Creator, CreatorDNA, Outcome, Recommendation
 from creatoros.embeddings.qdrant_client import get_client
 from creatoros.graph.pipeline import build_pipeline
 from creatoros.utils.logging import get_logger
@@ -208,6 +208,10 @@ def get_recommendation(request_id: uuid.UUID) -> dict:
         if row is None:
             raise HTTPException(status_code=404, detail="Recommendation not found")
 
+        outcome = (
+            session.query(Outcome).filter(Outcome.recommendation_id == row.id).one_or_none()
+        )
+
         return {
             "request_id": row.id,
             "status": row.status,
@@ -232,6 +236,28 @@ def get_recommendation(request_id: uuid.UUID) -> dict:
             "baseline_picks": row.baseline_picks,
             "created_at": row.created_at,
             "completed_at": row.completed_at,
+            "outcome": (
+                {
+                    "topic_match_score": (
+                        float(outcome.topic_match_score)
+                        if outcome.topic_match_score is not None
+                        else None
+                    ),
+                    "actual_engagement_rate": (
+                        float(outcome.actual_engagement_rate)
+                        if outcome.actual_engagement_rate is not None
+                        else None
+                    ),
+                    "predicted_engagement": (
+                        float(outcome.predicted_engagement)
+                        if outcome.predicted_engagement is not None
+                        else None
+                    ),
+                    "detected_at": outcome.detected_at,
+                }
+                if outcome
+                else None
+            ),
         }
     finally:
         session.close()

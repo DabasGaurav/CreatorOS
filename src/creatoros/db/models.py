@@ -206,6 +206,36 @@ class FeatureSnapshot(Base):
     )
 
 
+class Outcome(Base):
+    """Automated outcome tracking (Build Doc 3 §3, B16) — links a recommendation
+    to whatever real Reel the creator published next. One outcome per
+    recommendation (a creator gets one shot per cycle); topic_match_score and
+    the engagement snapshot are computed automatically, never manually entered.
+    """
+
+    __tablename__ = "outcomes"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=_uuid)
+    recommendation_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("recommendations.id"), unique=True, nullable=False
+    )
+    reel_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("reels.id"), nullable=False)
+
+    topic_match_score: Mapped[float | None] = mapped_column(Numeric, nullable=True)
+    actual_engagement_rate: Mapped[float | None] = mapped_column(Numeric, nullable=True)
+
+    # Snapshots from the recommendation at outcome-detection time — never
+    # recomputed retroactively, so later model changes can't leak backward
+    # into an outcome that was already logged (same leakage discipline as
+    # feature_snapshots, B9).
+    predicted_engagement: Mapped[float | None] = mapped_column(Numeric, nullable=True)
+    selection_type: Mapped[str | None] = mapped_column(String, nullable=True)
+
+    detected_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+
 class ExternalResultCache(Base):
     """TTL cache for Market Researcher external calls (YouTube/Reddit/pytrends),
     keyed by (source, query, date-bucket) — B4 step 5 / B7 step 4. Backed by

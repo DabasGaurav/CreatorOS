@@ -198,3 +198,18 @@ class FeatureSnapshot(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
+
+
+class ExternalResultCache(Base):
+    """TTL cache for Market Researcher external calls (YouTube/Reddit/pytrends),
+    keyed by (source, query, date-bucket) — B4 step 5 / B7 step 4. Backed by
+    Postgres so it survives process restarts during iterative agent development."""
+
+    __tablename__ = "external_result_cache"
+
+    cache_key: Mapped[str] = mapped_column(String, primary_key=True)
+    source: Mapped[str] = mapped_column(String, nullable=False)
+    query: Mapped[str] = mapped_column(String, nullable=False)
+    date_bucket: Mapped[str] = mapped_column(String, nullable=False)
+    result_json: Mapped[str] = mapped_column(String, nullable=False)
+    cached_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)

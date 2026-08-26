@@ -11,6 +11,7 @@ def test_expected_tables_registered():
         "creator_dna",
         "recommendations",
         "feature_snapshots",
+        "external_result_cache",
     }
 
 

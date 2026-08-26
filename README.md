@@ -4,8 +4,8 @@ An agentic recommendation system for a single Instagram Reels creator: what to c
 
 This repo is being built in three phases, each handed off and verified independently:
 
-- **Build Doc 1 — Data Foundation & Creator DNA** *(this phase)*: Instagram Graph API sync, Postgres schema, Qdrant embedding pipeline, deterministic Creator DNA aggregation. No LLM pipeline, no agent, no frontend.
-- Build Doc 2 — On-Demand Recommendation Engine (LangGraph, ranking, LLM reranker/content generation) — not started.
+- **Build Doc 1 — Data Foundation & Creator DNA**: Instagram Graph API sync, Postgres schema, Qdrant embedding pipeline, deterministic Creator DNA aggregation. No LLM pipeline, no agent, no frontend. **Verified against real infrastructure — see below.**
+- **Build Doc 2 — On-Demand Recommendation Engine** *(in progress)*: LangGraph pipeline, Market Researcher agent, Opportunity Generator, deterministic ranking layer, LightGBM Expected Engagement model, epsilon-greedy explore/exploit, LLM reranker + content generation.
 - Build Doc 3 — Web App & Outcome Loop (Next.js frontend, automated outcome tracking) — not started.
 
 ## Setup
@@ -13,6 +13,12 @@ This repo is being built in three phases, each handed off and verified independe
 ```bash
 uv sync --group dev
 cp .env.example .env   # fill in as credentials become available — see checkpoints below
+```
+
+**macOS only:** LightGBM needs the `libomp` system library, which isn't bundled by pip/uv:
+
+```bash
+brew install libomp
 ```
 
 ## Running tests

@@ -131,6 +131,33 @@ def test_unconfigured_source_recorded_as_failed_observation_not_a_crash(monkeypa
     assert "unavailable" in evidence.observations[0].raw_result_summary
 
 
+def test_unexpected_source_exception_recorded_as_failed_not_a_crash(monkeypatch):
+    # Not YouTubeNotConfigured/RedditNotConfigured/TrendsUnavailable — a generic
+    # failure (e.g. a misconfigured Reddit app returning 403 during OAuth), which
+    # a real live run showed previously propagated uncaught and killed the whole
+    # LangGraph node.
+    monkeypatch.setattr(
+        mr, "search_videos", lambda query: (_ for _ in ()).throw(RuntimeError("403 Forbidden"))
+    )
+
+    def call_step(niche, objective, observations):
+        return ResearchStep(
+            sufficient=False,
+            confidence=0.1,
+            reasoning="trying youtube",
+            next_source="youtube",
+            next_query="query",
+        )
+
+    session = FakeSession()
+    evidence = mr.run_market_researcher(
+        session, niche="AI/startups", objective="grow reach", max_iterations=1, call_step=call_step
+    )
+
+    assert evidence.observations[0].succeeded is False
+    assert "failed" in evidence.observations[0].raw_result_summary
+
+
 def test_cache_avoids_second_external_call_for_same_query(monkeypatch):
     call_count = {"n": 0}
 

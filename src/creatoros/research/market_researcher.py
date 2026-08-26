@@ -72,6 +72,19 @@ def _call_source(session: Session, source: str, query: str) -> SourceObservation
         return SourceObservation(
             source=source, query=query, raw_result_summary=f"unavailable: {exc}", succeeded=False
         )
+    except Exception as exc:
+        # Any other failure (auth misconfiguration, transient API error, a bad
+        # response shape) must not crash the whole recommendation cycle over one
+        # optional, best-effort source — confirmed live: a misconfigured Reddit
+        # app returned a 403 during OAuth token exchange, which previously
+        # propagated all the way up through the LangGraph node and killed the
+        # entire run. Every external source here is optional by design (B7); a
+        # broken one should degrade to "try something else," not "recommendation
+        # generation is now impossible."
+        logger.warning("Source %s failed unexpectedly for query %r: %s", source, query, exc)
+        return SourceObservation(
+            source=source, query=query, raw_result_summary=f"failed: {exc}", succeeded=False
+        )
 
     set_cached(session, source=source, query=query, result={"summary": summary})
     return SourceObservation(source=source, query=query, raw_result_summary=summary, succeeded=True)

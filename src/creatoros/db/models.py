@@ -30,6 +30,10 @@ class Creator(Base):
     instagram_user_id: Mapped[str] = mapped_column(String, unique=True, nullable=False)
     display_name: Mapped[str] = mapped_column(String, nullable=False)
     niche: Mapped[str] = mapped_column(String, nullable=False)
+
+    # Build Doc 3 magic-link auth — nullable since Build Doc 1/2 creators were
+    # provisioned before onboarding existed and have no email on file yet.
+    email: Mapped[str | None] = mapped_column(String, unique=True, nullable=True)
     connected_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
@@ -232,6 +236,40 @@ class Outcome(Base):
     selection_type: Mapped[str | None] = mapped_column(String, nullable=True)
 
     detected_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+
+class MagicLinkToken(Base):
+    """One-time, short-lived token emailed to a creator to sign in (Build Doc 3
+    onboarding). Single-use — consumed on first successful verify."""
+
+    __tablename__ = "magic_link_tokens"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=_uuid)
+    creator_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("creators.id"), nullable=False)
+    token: Mapped[str] = mapped_column(String, unique=True, nullable=False)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+
+class Session(Base):
+    """A signed-in session issued after a magic-link verify. Beta-scale
+    simplification: an opaque bearer token the frontend stores and sends back —
+    proves email ownership at sign-in, but requests aren't re-authorized
+    per-call against it yet (see auth/sessions.py for the documented scope of
+    what this is/isn't hardened against)."""
+
+    __tablename__ = "sessions"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=_uuid)
+    creator_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("creators.id"), nullable=False)
+    token: Mapped[str] = mapped_column(String, unique=True, nullable=False)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
 

@@ -41,3 +41,19 @@ export function getRecommendation(requestId: string): Promise<Recommendation> {
 export function getCreator(creatorId: string): Promise<Creator & { dna: CreatorDNA | null }> {
   return request(`/creators/${creatorId}`);
 }
+
+export function requestMagicLink(email: string): Promise<{ detail: string }> {
+  return request("/auth/request-link", {
+    method: "POST",
+    body: JSON.stringify({ email }),
+  });
+}
+
+export function verifyMagicLink(
+  token: string,
+): Promise<{ session_token: string; creator_id: string }> {
+  return request("/auth/verify", {
+    method: "POST",
+    body: JSON.stringify({ token }),
+  });
+}

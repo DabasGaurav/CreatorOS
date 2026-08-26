@@ -1,8 +1,9 @@
 "use client";
 
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { createRecommendation, getCreator, getRecommendation } from "@/lib/api";
+import { clearSession, getSession } from "@/lib/session";
 import type { Creator, CreatorDNA, Recommendation } from "@/lib/types";
 import CreatorDNASummary from "@/components/CreatorDNASummary";
 import EmptyState from "@/components/EmptyState";
@@ -12,10 +13,19 @@ import RecommendationCard from "@/components/RecommendationCard";
 const POLL_INTERVAL_MS = 2000;
 
 function CoreScreen() {
+  const router = useRouter();
   const searchParams = useSearchParams();
-  // Pre-auth dev convenience: pass ?creator=<uuid> until magic-link auth is
-  // wired. The onboarding flow will replace this with a session-derived id.
-  const creatorId = searchParams.get("creator");
+  // ?creator=<uuid> stays as a dev-only override (useful for local testing
+  // without a mailbox handy); a signed-in session is the real path. Read
+  // once via a lazy initializer rather than an effect+setState — by the time
+  // this client component mounts (it's under Suspense from useSearchParams),
+  // window/localStorage are already available, so there's no async gap to
+  // bridge with an effect.
+  const [creatorId] = useState<string | null>(() => {
+    const fromParam = searchParams.get("creator");
+    if (fromParam) return fromParam;
+    return getSession()?.creator_id ?? null;
+  });
 
   const [creator, setCreator] = useState<Creator | null>(null);
   const [dna, setDna] = useState<CreatorDNA | null>(null);
@@ -70,11 +80,14 @@ function CoreScreen() {
 
   if (!creatorId) {
     return (
-      <main className="mx-auto flex min-h-screen max-w-md flex-col items-center justify-center px-6 text-center">
-        <p className="font-body text-sm text-ink-muted">
-          Missing <code className="font-utility text-ink">?creator=&lt;id&gt;</code> — connect an
-          account first (Build Doc 1 onboarding).
-        </p>
+      <main className="mx-auto flex min-h-screen max-w-sm flex-col items-center justify-center px-6 text-center">
+        <p className="mb-4 font-body text-sm text-ink-muted">You&apos;re not signed in.</p>
+        <a
+          href="/auth/signin"
+          className="rounded-md bg-signal-amber px-4 py-2 font-display text-sm font-semibold text-canvas"
+        >
+          Sign in
+        </a>
       </main>
     );
   }
@@ -93,10 +106,20 @@ function CoreScreen() {
 
   return (
     <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-8 sm:px-6">
-      <div className="mb-8 space-y-4">
+      <div className="mb-8 flex items-start justify-between gap-4">
         <h1 className="font-display text-3xl font-semibold text-ink sm:text-4xl">CreatorOS</h1>
-        {creator && <CreatorDNASummary creator={creator} dna={dna} />}
+        <button
+          type="button"
+          onClick={() => {
+            clearSession();
+            router.push("/auth/signin");
+          }}
+          className="font-body text-xs text-ink-muted underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-signal-amber"
+        >
+          Sign out
+        </button>
       </div>
+      <div className="mb-8">{creator && <CreatorDNASummary creator={creator} dna={dna} />}</div>
 
       {error && <p className="mb-4 font-body text-sm text-alert-coral">{error}</p>}
 

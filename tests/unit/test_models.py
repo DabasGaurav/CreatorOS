@@ -13,6 +13,8 @@ def test_expected_tables_registered():
         "feature_snapshots",
         "external_result_cache",
         "outcomes",
+        "magic_link_tokens",
+        "sessions",
     }
 
 

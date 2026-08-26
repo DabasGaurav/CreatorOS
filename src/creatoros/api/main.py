@@ -14,6 +14,7 @@ from fastapi import BackgroundTasks, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
+from creatoros.auth.magic_link import request_magic_link, verify_magic_link_token
 from creatoros.db.base import get_session
 from creatoros.db.models import Creator, CreatorDNA, Outcome, Recommendation
 from creatoros.embeddings.qdrant_client import get_client
@@ -30,7 +31,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:3000"],
     allow_methods=["GET", "POST"],
-    allow_headers=["Content-Type"],
+    allow_headers=["Content-Type", "Authorization"],
 )
 
 # Maps LangGraph node names to the spec's UI-facing loading-state vocabulary
@@ -46,6 +47,19 @@ _NODE_TO_STAGE = {
     "rerank": "selected",
     "content": "written",
 }
+
+
+class RequestMagicLinkRequest(BaseModel):
+    email: str
+
+
+class VerifyMagicLinkRequest(BaseModel):
+    token: str
+
+
+class VerifyMagicLinkResponse(BaseModel):
+    session_token: str
+    creator_id: uuid.UUID
 
 
 class CreateRecommendationRequest(BaseModel):
@@ -174,6 +188,30 @@ def create_recommendation(
         _run_pipeline_and_store, recommendation_id, request.creator_id, request.objective
     )
     return CreateRecommendationResponse(request_id=recommendation_id, status="pending")
+
+
+@app.post("/auth/request-link")
+def request_link(request: RequestMagicLinkRequest) -> dict:
+    session = get_session()
+    try:
+        # Always the same response regardless of whether the email matched a
+        # creator — don't let this endpoint reveal which emails are registered.
+        request_magic_link(session, request.email)
+        return {"detail": "If that email is registered, a sign-in link has been sent."}
+    finally:
+        session.close()
+
+
+@app.post("/auth/verify", response_model=VerifyMagicLinkResponse)
+def verify_link(request: VerifyMagicLinkRequest) -> VerifyMagicLinkResponse:
+    session = get_session()
+    try:
+        result = verify_magic_link_token(session, request.token)
+        if result is None:
+            raise HTTPException(status_code=400, detail="Link is invalid, expired, or already used")
+        return VerifyMagicLinkResponse(session_token=result.token, creator_id=result.creator_id)
+    finally:
+        session.close()
 
 
 @app.get("/creators/{creator_id}")

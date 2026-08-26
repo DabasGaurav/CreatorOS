@@ -72,6 +72,16 @@ class Settings(BaseSettings):
     weight_novelty: float = Field(default=0.2)
     weight_expected_engagement: float = Field(default=0.2)
 
+    # Resend (Build Doc 3 — magic-link auth). Beta scale (15-30 creators): the
+    # default "onboarding@resend.dev" sender only delivers to the Resend
+    # account's own verified email without a custom domain — fine for testing,
+    # swap in a verified domain before real beta creators sign in.
+    resend_api_key: str = ""
+    resend_from_email: str = "CreatorOS <onboarding@resend.dev>"
+    frontend_base_url: str = "http://localhost:3000"
+    magic_link_token_ttl_minutes: int = Field(default=15)
+    session_ttl_days: int = Field(default=30)
+
     @property
     def embedding_model_version(self) -> str:
         """Bump the `:v1` suffix whenever caption+transcript text construction changes,

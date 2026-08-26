@@ -143,3 +143,58 @@ class CreatorDNA(Base):
     )
 
     creator: Mapped["Creator"] = relationship(back_populates="dna_versions")
+
+
+class Recommendation(Base):
+    """One on-demand recommendation cycle (Build Doc 2, B3/B13). Row id doubles as
+    the LangGraph run's request_id, polled via GET /recommendations/{id}."""
+
+    __tablename__ = "recommendations"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=_uuid)
+    creator_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("creators.id"), nullable=False)
+    status: Mapped[str] = mapped_column(String, nullable=False, default="pending")
+    error: Mapped[str | None] = mapped_column(String, nullable=True)
+
+    topic: Mapped[str | None] = mapped_column(String, nullable=True)
+    angle: Mapped[str | None] = mapped_column(String, nullable=True)
+    format: Mapped[str | None] = mapped_column(String, nullable=True)
+
+    composite_score: Mapped[float | None] = mapped_column(Numeric, nullable=True)
+    evidence_breakdown: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    selection_type: Mapped[str | None] = mapped_column(String, nullable=True)
+    content_package: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+
+    # B13 step 2: log baseline picks alongside the real pick for offline comparison.
+    baseline_picks: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+
+    # B16 step 4 (Build Doc 3 outcome loop reads this): the Expected Engagement
+    # model's prediction at recommendation time, never recomputed retroactively.
+    expected_engagement_prediction: Mapped[float | None] = mapped_column(Numeric, nullable=True)
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    creator: Mapped["Creator"] = relationship()
+
+
+class FeatureSnapshot(Base):
+    """Timestamped snapshot of every Expected Engagement model input, captured at
+    recommendation time — built before any model code, per B9 step 2, specifically
+    so the model can never leak post-hoc data: every feature here is exactly what
+    was known at the moment of the recommendation, never recomputed later."""
+
+    __tablename__ = "feature_snapshots"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=_uuid)
+    recommendation_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("recommendations.id"), nullable=False
+    )
+    creator_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("creators.id"), nullable=False)
+    features: Mapped[dict] = mapped_column(JSONB, nullable=False)
+    predicted_engagement: Mapped[float | None] = mapped_column(Numeric, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )

@@ -1,7 +1,7 @@
 [project]
 name = "creatoros"
 version = "0.1.0"
-description = "CreatorOS — agentic recommendation system for Instagram Reels creators. Build Doc 1: data foundation."
+description = "CreatorOS — agentic recommendation system for Instagram Reels creators."
 requires-python = ">=3.11"
 dependencies = [
     "sqlalchemy>=2.0",
@@ -17,6 +17,13 @@ dependencies = [
     "scikit-learn>=1.4",
     "numpy>=1.26",
     "click>=8.1",
+    "langgraph>=0.2",
+    "anthropic>=0.34",
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
+    "lightgbm>=4.5",
+    "praw>=7.7",
+    "pytrends>=4.9",
 ]
 
 [dependency-groups]
@@ -27,11 +34,12 @@ dev = [
     "respx>=0.21",
     "time-machine>=2.14",
     "ruff>=0.5",
+    "httpx>=0.27",  # also used as FastAPI's TestClient transport
 ]
 
 [tool.pytest.ini_options]
 markers = [
-    "integration: requires a live external service/credential (Postgres, Meta, Voyage, or Qdrant Cloud)",
+    "integration: requires a live external service/credential (Postgres, Meta, Voyage, Qdrant Cloud, Anthropic, YouTube, or Reddit)",
 ]
 addopts = "-m 'not integration'"
 testpaths = ["tests"]

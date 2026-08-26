@@ -9,6 +9,8 @@ def test_expected_tables_registered():
         "reel_insights",
         "niche_signal",
         "creator_dna",
+        "recommendations",
+        "feature_snapshots",
     }
 
 

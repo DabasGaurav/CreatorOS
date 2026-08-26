@@ -36,6 +36,42 @@ class Settings(BaseSettings):
 
     log_level: str = "INFO"
 
+    # Anthropic API (Build Doc 2) — pay-as-you-go console.anthropic.com key,
+    # not a Claude subscription. Haiku for research/generation-volume steps,
+    # Sonnet for reranking/final content, per the spec's cost-tiering (A6).
+    anthropic_api_key: str = ""
+    model_haiku: str = "claude-haiku-4-5"
+    model_sonnet: str = "claude-sonnet-5"
+
+    # Market Researcher external sources — all optional; the agent falls back
+    # to cached category-level data when a source has no credentials.
+    youtube_api_key: str = ""
+    reddit_client_id: str = ""
+    reddit_client_secret: str = ""
+    reddit_user_agent: str = "CreatorOS/0.1 (research agent)"
+
+    market_researcher_max_iterations: int = Field(default=5)
+    external_cache_ttl_hours: int = Field(default=12)
+
+    opportunity_candidate_min: int = Field(default=20)
+    opportunity_candidate_max: int = Field(default=50)
+
+    # Epsilon-greedy explore/exploit (B11) — spec: ~85/15 split, exploration
+    # candidates must still clear a minimum quality floor (top-40th-percentile).
+    epsilon_explore_rate: float = Field(default=0.15)
+    explore_quality_floor_percentile: float = Field(default=0.40)
+
+    # CompositeScore weights (B8) — hand-set Phase-1 priors, explicitly not
+    # empirically learned yet (no outcome data exists to learn them from).
+    # Spec states this should be domain-reasoning guesses; starting equal-
+    # weighted is the most honest "we don't know yet" prior, documented here
+    # rather than picking arbitrary unequal numbers with no basis.
+    weight_creator_fit: float = Field(default=0.2)
+    weight_audience_demand: float = Field(default=0.2)
+    weight_trend_momentum: float = Field(default=0.2)
+    weight_novelty: float = Field(default=0.2)
+    weight_expected_engagement: float = Field(default=0.2)
+
     @property
     def embedding_model_version(self) -> str:
         """Bump the `:v1` suffix whenever caption+transcript text construction changes,

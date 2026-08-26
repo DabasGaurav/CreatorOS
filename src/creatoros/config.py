@@ -11,7 +11,7 @@ class Settings(BaseSettings):
     meta_app_id: str = ""
     meta_app_secret: str = ""
     meta_oauth_redirect_uri: str = "http://localhost:8765/callback"
-    graph_api_version: str = "v21.0"
+    graph_api_version: str = "v23.0"
 
     # Postgres
     database_url: str = "postgresql+psycopg://user:password@localhost/creatoros"

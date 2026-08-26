@@ -52,6 +52,14 @@ def parse_media_fields(raw_media: dict) -> dict:
     """Extract the metadata Build Doc 1 needs pulled out of raw_media_json so later
     jobs don't re-parse JSONB — spec doesn't guarantee duration on every media object
     (Reels vs. images), so this degrades to None rather than raising."""
+    # Confirmed against Meta's current IG Media field reference during Build Doc 1
+    # integration testing: there is NO duration field on the IG Media object at
+    # all, on any API version — not "video_duration", not anything else. This is a
+    # real, permanent Graph API gap, not a wrong field name. duration_seconds stays
+    # None for every real reel until/unless a future phase downloads media_url and
+    # inspects the video file directly (out of scope for Phase 1's data-plumbing-
+    # only mandate). Callers (typical_length_range, format duration buckets)
+    # already degrade gracefully when this is None.
     is_reel = raw_media.get("media_product_type") == "REELS"
     return {
         "duration_seconds": raw_media.get("video_duration") if is_reel else None,
@@ -101,7 +109,11 @@ def _parse_timestamp(value: str | None) -> datetime:
 def parse_insights_metrics(raw_insights: dict) -> dict[str, int | None]:
     """Graph API returns {"data": [{"name": "reach", "values": [{"value": N}]}, ...]} —
     flatten into a simple metric -> value dict. Missing metrics are left None rather
-    than defaulted to 0, so 'not returned by the API' stays distinguishable from 'zero'."""
+    than defaulted to 0, so 'not returned by the API' stays distinguishable from 'zero'.
+
+    "plays" (the metric name in the original spec) was rejected by a live API call
+    during integration testing — Meta now calls it "views". The DB column stays
+    named `plays` (schema stability); only the API-side mapping changed."""
     metrics: dict[str, int | None] = {
         "reach": None,
         "likes": None,
@@ -110,7 +122,7 @@ def parse_insights_metrics(raw_insights: dict) -> dict[str, int | None]:
         "saves": None,
         "plays": None,
     }
-    name_map = {"saved": "saves"}
+    name_map = {"saved": "saves", "views": "plays"}
     for entry in raw_insights.get("data", []):
         name = name_map.get(entry.get("name"), entry.get("name"))
         if name not in metrics:

@@ -6,7 +6,7 @@ from datetime import UTC, datetime, timedelta
 from sqlalchemy.orm import Session
 
 from creatoros.db.models import Creator
-from creatoros.instagram.oauth import compute_expiry, exchange_short_for_long_lived_token
+from creatoros.instagram.oauth import compute_expiry, refresh_long_lived_token
 from creatoros.security.crypto import decrypt_token, encrypt_token
 from creatoros.utils.logging import get_logger
 
@@ -21,8 +21,11 @@ def creators_due_for_refresh(session: Session, *, now: datetime | None = None) -
 
 
 def refresh_creator_token(session: Session, creator: Creator) -> Creator:
+    """Ongoing renewal for an already-long-lived Instagram Login token uses
+    ig_refresh_token (refresh_long_lived_token), not the initial short-lived
+    exchange — a distinct endpoint, confirmed against a real token."""
     current_token = decrypt_token(creator.token)
-    result = exchange_short_for_long_lived_token(current_token)
+    result = refresh_long_lived_token(current_token)
     creator.token = encrypt_token(result["access_token"])
     creator.token_expires_at = compute_expiry(result.get("expires_in", 60 * 24 * 60 * 60))
     session.commit()

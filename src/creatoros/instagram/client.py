@@ -1,5 +1,15 @@
 """Graph API client: retry-with-backoff, rate-limit awareness, and cursor pagination.
-Every call is wrapped so throttling is logged, never silently swallowed (per spec)."""
+Every call is wrapped so throttling is logged, never silently swallowed (per spec).
+
+Host confirmed against a real live token during Build Doc 1 integration testing
+(2026-08-26): this project's tokens come from Meta's 'Instagram API with Instagram
+Login' product (direct Instagram Business/Creator login, no Facebook Page required)
+— which lives at graph.instagram.com, NOT graph.facebook.com. The classic 'Login
+for Business' flow the original spec assumed (Facebook Login + a linked Page) is a
+different, older product; graph.facebook.com returned "Cannot parse access token"
+for this token. This also means the A11 Facebook-Page-linkage requirement doesn't
+apply to accounts onboarded this way — see oauth.py.
+"""
 
 import time
 from collections.abc import Generator
@@ -13,7 +23,7 @@ from creatoros.utils.retry import with_backoff
 
 logger = get_logger(__name__)
 
-GRAPH_BASE_URL = "https://graph.facebook.com/{version}"
+GRAPH_BASE_URL = "https://graph.instagram.com/{version}"
 
 # Business Use Case usage is impression-based; proactively slow down past this % to
 # avoid actually hitting the hard limit and getting throttled with a hard error.
@@ -121,19 +131,10 @@ class GraphAPIClient:
                 break
 
     def get_media_insights(self, media_id: str) -> dict:
-        metrics = "reach,likes,comments,shares,saved,plays"
+        # "plays" was rejected live by the current API ("must be one of ... views
+        # ..."); Meta renamed/replaced it with "views" since the spec was written.
+        metrics = "reach,likes,comments,shares,saved,views"
         return self._request(f"{media_id}/insights", params={"metric": metrics})
 
-    def get_pages(self) -> list[dict]:
-        """Facebook Pages the authorizing user manages — needed to find which one
-        has a linked Instagram Business/Creator account."""
-        result = self._request("me/accounts", params={"fields": "id,name"})
-        return result.get("data", [])
-
-    def get_instagram_business_account(self, page_id: str) -> str | None:
-        result = self._request(page_id, params={"fields": "instagram_business_account"})
-        account = result.get("instagram_business_account")
-        return account.get("id") if account else None
-
     def get_account_profile(self, ig_user_id: str) -> dict:
-        return self._request(ig_user_id, params={"fields": "id,username"})
+        return self._request(ig_user_id, params={"fields": "id,username,account_type,media_count"})

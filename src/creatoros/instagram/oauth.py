@@ -1,7 +1,18 @@
-"""OAuth handler for the 'Login for Business' flow used to connect a creator's
-Instagram Business/Creator account. Framework-free by design — Build Doc 1 has no
-FastAPI surface yet; the connect script (scripts/connect_creator.py) prints the
-authorize URL and runs a small stdlib callback listener to capture the redirect code.
+"""OAuth handler for Meta's 'Instagram API with Instagram Login' flow — direct
+Instagram Business/Creator account login, no linked Facebook Page required.
+
+Confirmed against a real live token during Build Doc 1 integration testing
+(2026-08-26): this project's tokens use www.instagram.com / api.instagram.com /
+graph.instagram.com hosts, NOT graph.facebook.com. This is a different, newer
+Meta product than the classic 'Login for Business' (Facebook Login) flow the
+original spec assumed — graph.facebook.com rejected the token outright
+("Cannot parse access token"). This also means A11's Facebook-Page-linkage
+requirement doesn't apply to accounts onboarded this way: no Facebook Page,
+no `get_pages`/`get_instagram_business_account` resolution step needed.
+
+Framework-free by design — Build Doc 1 has no FastAPI surface yet; the connect
+script (scripts/connect_creator.py) prints the authorize URL and runs a small
+stdlib callback listener to capture the redirect code.
 """
 
 import secrets
@@ -16,15 +27,15 @@ from creatoros.utils.retry import with_backoff
 
 logger = get_logger(__name__)
 
-AUTHORIZE_BASE_URL = "https://www.facebook.com/{version}/dialog/oauth"
-TOKEN_URL = "https://graph.facebook.com/{version}/oauth/access_token"
+AUTHORIZE_URL = "https://www.instagram.com/oauth/authorize"
+CODE_EXCHANGE_URL = "https://api.instagram.com/oauth/access_token"
+LONG_LIVED_EXCHANGE_URL = "https://graph.instagram.com/access_token"
+REFRESH_URL = "https://graph.instagram.com/refresh_access_token"
 
-# Minimum scopes needed to read the creator's own media, insights, and page linkage.
 DEFAULT_SCOPES = (
-    "instagram_basic",
-    "instagram_manage_insights",
-    "pages_show_list",
-    "business_management",
+    "instagram_business_basic",
+    "instagram_business_manage_insights",
+    "instagram_business_content_publish",
 )
 
 RETRYABLE_EXCEPTIONS = (httpx.TransportError, httpx.HTTPStatusError)
@@ -47,22 +58,23 @@ def build_authorize_url(state: str, *, scopes: tuple[str, ...] = DEFAULT_SCOPES)
         "response_type": "code",
         "state": state,
     }
-    base = AUTHORIZE_BASE_URL.format(version=settings.graph_api_version)
-    return f"{base}?{urlencode(params)}"
+    return f"{AUTHORIZE_URL}?{urlencode(params)}"
 
 
 @with_backoff(exceptions=RETRYABLE_EXCEPTIONS, max_attempts=3, initial=1.0, max_wait=10.0)
 def exchange_code_for_token(code: str, *, http_client: httpx.Client | None = None) -> dict:
-    """Exchange the OAuth redirect `code` for a short-lived access token."""
+    """POST to api.instagram.com — returns a short-lived (~1hr) token plus the
+    Instagram-scoped user id, per this flow's contract (Facebook Login's
+    equivalent exchange is a GET, not a POST — a real difference, not a typo)."""
     settings = get_settings()
     client = http_client or httpx.Client(timeout=15.0)
-    url = TOKEN_URL.format(version=settings.graph_api_version)
-    response = client.get(
-        url,
-        params={
+    response = client.post(
+        CODE_EXCHANGE_URL,
+        data={
             "client_id": settings.meta_app_id,
-            "redirect_uri": settings.meta_oauth_redirect_uri,
             "client_secret": settings.meta_app_secret,
+            "grant_type": "authorization_code",
+            "redirect_uri": settings.meta_oauth_redirect_uri,
             "code": code,
         },
     )
@@ -77,23 +89,43 @@ def exchange_code_for_token(code: str, *, http_client: httpx.Client | None = Non
 def exchange_short_for_long_lived_token(
     short_lived_token: str, *, http_client: httpx.Client | None = None
 ) -> dict:
-    """Long-lived tokens last ~60 days — this is what gets stored (encrypted)."""
+    """Long-lived tokens last ~60 days. Only valid on a short-lived token — calling
+    this again on an already-long-lived token errors; use refresh_long_lived_token
+    instead for ongoing renewal (see token_refresh.py)."""
     settings = get_settings()
     client = http_client or httpx.Client(timeout=15.0)
-    url = TOKEN_URL.format(version=settings.graph_api_version)
     response = client.get(
-        url,
+        LONG_LIVED_EXCHANGE_URL,
         params={
-            "grant_type": "fb_exchange_token",
-            "client_id": settings.meta_app_id,
+            "grant_type": "ig_exchange_token",
             "client_secret": settings.meta_app_secret,
-            "fb_exchange_token": short_lived_token,
+            "access_token": short_lived_token,
         },
     )
     response.raise_for_status()
     data = response.json()
     if "access_token" not in data:
         raise OAuthError(f"Long-lived exchange response missing access_token: {data}")
+    return data
+
+
+@with_backoff(exceptions=RETRYABLE_EXCEPTIONS, max_attempts=3, initial=1.0, max_wait=10.0)
+def refresh_long_lived_token(
+    current_token: str, *, http_client: httpx.Client | None = None
+) -> dict:
+    """The ongoing renewal path for an already-long-lived Instagram Login token —
+    confirmed live: returns a new ~60-day token. Distinct from
+    exchange_short_for_long_lived_token, which only works once, on the initial
+    short-lived token."""
+    client = http_client or httpx.Client(timeout=15.0)
+    response = client.get(
+        REFRESH_URL,
+        params={"grant_type": "ig_refresh_token", "access_token": current_token},
+    )
+    response.raise_for_status()
+    data = response.json()
+    if "access_token" not in data:
+        raise OAuthError(f"Refresh response missing access_token: {data}")
     return data
 
 

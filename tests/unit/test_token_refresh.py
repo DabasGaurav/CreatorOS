@@ -58,7 +58,7 @@ def test_refresh_creator_token_updates_token_and_expiry(monkeypatch):
     monkeypatch.setattr(token_refresh, "encrypt_token", lambda t: f"encrypted:{t}")
     monkeypatch.setattr(
         token_refresh,
-        "exchange_short_for_long_lived_token",
+        "refresh_long_lived_token",
         lambda token: {"access_token": "new-token", "expires_in": 5184000},
     )
 
@@ -85,7 +85,7 @@ def test_refresh_all_due_skips_failures_and_continues(monkeypatch):
             raise RuntimeError("network error")
         return {"access_token": "new-token", "expires_in": 5184000}
 
-    monkeypatch.setattr(token_refresh, "exchange_short_for_long_lived_token", flaky_exchange)
+    monkeypatch.setattr(token_refresh, "refresh_long_lived_token", flaky_exchange)
 
     refreshed = token_refresh.refresh_all_due(session)
 

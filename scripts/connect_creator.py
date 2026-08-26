@@ -1,10 +1,14 @@
 #!/usr/bin/env python
 """Connect a creator's Instagram Business/Creator account (Build Doc 1, §1.2 step 2).
 
+Uses Meta's 'Instagram API with Instagram Login' flow — confirmed against a real
+token during integration testing, no Facebook Page linkage required (see oauth.py
+and client.py for details on how this differs from the classic Facebook Login flow
+the original spec assumed).
+
 Deliberately framework-free — no FastAPI yet. Prints the authorize URL, runs a
 one-shot local HTTP server to catch the OAuth redirect, exchanges the code for a
-long-lived token, resolves the linked Instagram Business Account via the user's
-Facebook Pages, and upserts the creator row (token stored encrypted).
+long-lived token, and upserts the creator row (token stored encrypted).
 
 Usage:
     uv run python scripts/connect_creator.py --niche "AI/startups"
@@ -87,33 +91,15 @@ def main() -> int:
 
     print("Exchanging code for a short-lived token...")
     short_lived = exchange_code_for_token(result.code)
+    ig_user_id = str(short_lived["user_id"])
 
     print("Exchanging for a long-lived (60-day) token...")
     long_lived = exchange_short_for_long_lived_token(short_lived["access_token"])
     access_token = long_lived["access_token"]
     expires_at = compute_expiry(long_lived.get("expires_in", 60 * 24 * 60 * 60))
 
-    print("Resolving the linked Instagram Business Account...")
+    print("Fetching account profile...")
     with GraphAPIClient(access_token) as client:
-        pages = client.get_pages()
-        if not pages:
-            print("No Facebook Pages found for this account.", file=sys.stderr)
-            return 1
-
-        ig_user_id = None
-        for page in pages:
-            ig_user_id = client.get_instagram_business_account(page["id"])
-            if ig_user_id:
-                break
-
-        if not ig_user_id:
-            print(
-                "No linked Instagram Business/Creator account found on any Page. "
-                "The account must be Business/Creator type and linked to a Facebook Page.",
-                file=sys.stderr,
-            )
-            return 1
-
         profile = client.get_account_profile(ig_user_id)
 
     session = get_session()

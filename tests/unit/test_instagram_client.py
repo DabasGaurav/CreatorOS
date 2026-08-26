@@ -4,7 +4,7 @@ import respx
 
 from creatoros.instagram.client import GraphAPIClient, GraphAPIError, RateLimitedError
 
-BASE = "https://graph.facebook.com/v21.0"
+BASE = "https://graph.instagram.com/v23.0"
 
 
 @pytest.fixture
@@ -77,26 +77,16 @@ def test_server_error_is_retried_then_succeeds(client):
 
 
 @respx.mock
-def test_get_pages_returns_data_list(client):
-    respx.get(f"{BASE}/me/accounts").mock(
-        return_value=httpx.Response(200, json={"data": [{"id": "p1", "name": "My Page"}]})
+def test_get_media_insights_requests_views_not_plays(client):
+    """Regression test: "plays" was rejected live by the current API — Meta
+    renamed it to "views". Assert the client requests the current metric name."""
+    route = respx.get(f"{BASE}/m1/insights").mock(
+        return_value=httpx.Response(200, json={"data": []})
     )
-    pages = client.get_pages()
-    assert pages == [{"id": "p1", "name": "My Page"}]
-
-
-@respx.mock
-def test_get_instagram_business_account_returns_id_when_linked(client):
-    respx.get(f"{BASE}/p1").mock(
-        return_value=httpx.Response(200, json={"instagram_business_account": {"id": "ig123"}})
-    )
-    assert client.get_instagram_business_account("p1") == "ig123"
-
-
-@respx.mock
-def test_get_instagram_business_account_returns_none_when_unlinked(client):
-    respx.get(f"{BASE}/p1").mock(return_value=httpx.Response(200, json={}))
-    assert client.get_instagram_business_account("p1") is None
+    client.get_media_insights("m1")
+    requested_metrics = route.calls[0].request.url.params["metric"]
+    assert "views" in requested_metrics
+    assert "plays" not in requested_metrics
 
 
 @respx.mock

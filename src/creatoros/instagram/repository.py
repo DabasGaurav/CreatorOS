@@ -7,6 +7,15 @@ from creatoros.db.models import Creator, Reel, ReelInsight
 from creatoros.security.crypto import encrypt_token
 
 
+def get_latest_insight(session: Session, reel_id: uuid.UUID) -> ReelInsight | None:
+    return (
+        session.query(ReelInsight)
+        .filter(ReelInsight.reel_id == reel_id)
+        .order_by(ReelInsight.fetched_at.desc())
+        .first()
+    )
+
+
 def upsert_creator(
     session: Session,
     *,

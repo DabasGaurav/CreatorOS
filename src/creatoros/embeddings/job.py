@@ -6,26 +6,18 @@ import uuid
 from qdrant_client import QdrantClient
 from sqlalchemy.orm import Session
 
-from creatoros.db.models import Reel, ReelInsight
+from creatoros.db.models import Reel
 from creatoros.dna.metrics import compute_engagement_rate
 from creatoros.embeddings.qdrant_client import upsert_reel_point
 from creatoros.embeddings.voyage_client import build_reel_embedding_text, embed_text
+from creatoros.instagram.repository import get_latest_insight
 from creatoros.utils.logging import get_logger
 
 logger = get_logger(__name__)
 
 
-def _latest_insight(session: Session, reel_id: uuid.UUID) -> ReelInsight | None:
-    return (
-        session.query(ReelInsight)
-        .filter(ReelInsight.reel_id == reel_id)
-        .order_by(ReelInsight.fetched_at.desc())
-        .first()
-    )
-
-
 def embed_and_upsert_reel(session: Session, qdrant: QdrantClient, reel: Reel) -> None:
-    insight = _latest_insight(session, reel.id)
+    insight = get_latest_insight(session, reel.id)
     engagement_rate = (
         compute_engagement_rate(
             likes=insight.likes,

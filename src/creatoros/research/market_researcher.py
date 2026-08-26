@@ -15,7 +15,7 @@ from collections.abc import Callable
 from sqlalchemy.orm import Session
 
 from creatoros.config import get_settings
-from creatoros.llm.client import parse_structured
+from creatoros.llm.client import current_date_context, parse_structured
 from creatoros.research.cache import get_cached, set_cached
 from creatoros.research.reddit_client import RedditNotConfigured, search_posts
 from creatoros.research.schemas import ResearchEvidence, ResearchStep, SourceObservation
@@ -86,6 +86,7 @@ def _default_call_step(
         or "(no evidence gathered yet)"
     )
     user_message = (
+        f"{current_date_context()}\n\n"
         f"Niche: {niche}\nObjective: {objective}\n\nEvidence gathered so far:\n{history_text}"
     )
     return parse_structured(

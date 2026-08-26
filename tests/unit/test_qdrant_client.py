@@ -74,7 +74,7 @@ def test_cosine_similarity_orthogonal_vectors_is_zero():
     assert qc.cosine_similarity(_unit_vector(0), _unit_vector(1)) == pytest.approx(0.0)
 
 
-def test_creator_fit_ranks_similar_topic_higher_than_dissimilar(client, monkeypatch):
+def test_creator_fit_ranks_similar_topic_higher_than_dissimilar(client):
     creator_id = uuid.uuid4()
     now = datetime.now(UTC)
 
@@ -108,16 +108,17 @@ def test_creator_fit_ranks_similar_topic_higher_than_dissimilar(client, monkeypa
         collection_name="reels_test",
     )
 
-    def fake_embed_text(text, input_type="query"):
-        return _unit_vector(0) if text == "ai topic" else _unit_vector(6)
-
-    monkeypatch.setattr(qc, "embed_text", fake_embed_text)
-
     similar_score = qc.creator_fit(
-        client, candidate_text="ai topic", creator_id=creator_id, collection_name="reels_test"
+        client,
+        candidate_vector=_unit_vector(0),
+        creator_id=creator_id,
+        collection_name="reels_test",
     )
     dissimilar_score = qc.creator_fit(
-        client, candidate_text="unrelated", creator_id=creator_id, collection_name="reels_test"
+        client,
+        candidate_vector=_unit_vector(6),
+        creator_id=creator_id,
+        collection_name="reels_test",
     )
 
     assert similar_score > dissimilar_score
@@ -125,15 +126,17 @@ def test_creator_fit_ranks_similar_topic_higher_than_dissimilar(client, monkeypa
     assert 0.0 <= dissimilar_score <= 1.0
 
 
-def test_creator_fit_returns_zero_with_no_history(client, monkeypatch):
-    monkeypatch.setattr(qc, "embed_text", lambda text, input_type="query": _unit_vector(0))
+def test_creator_fit_returns_zero_with_no_history(client):
     score = qc.creator_fit(
-        client, candidate_text="anything", creator_id=uuid.uuid4(), collection_name="reels_test"
+        client,
+        candidate_vector=_unit_vector(0),
+        creator_id=uuid.uuid4(),
+        collection_name="reels_test",
     )
     assert score == 0.0
 
 
-def test_personal_novelty_low_for_near_duplicate_of_recent_post(client, monkeypatch):
+def test_personal_novelty_low_for_near_duplicate_of_recent_post(client):
     creator_id = uuid.uuid4()
     now = datetime.now(UTC)
     qc.upsert_reel_point(
@@ -145,15 +148,17 @@ def test_personal_novelty_low_for_near_duplicate_of_recent_post(client, monkeypa
         engagement_rate=0.5,
         collection_name="reels_test",
     )
-    monkeypatch.setattr(qc, "embed_text", lambda text, input_type="query": _unit_vector(0))
 
     novelty = qc.personal_novelty(
-        client, candidate_text="same topic", creator_id=creator_id, collection_name="reels_test"
+        client,
+        candidate_vector=_unit_vector(0),
+        creator_id=creator_id,
+        collection_name="reels_test",
     )
     assert novelty == pytest.approx(0.0, abs=1e-6)
 
 
-def test_personal_novelty_high_for_dissimilar_topic(client, monkeypatch):
+def test_personal_novelty_high_for_dissimilar_topic(client):
     creator_id = uuid.uuid4()
     now = datetime.now(UTC)
     qc.upsert_reel_point(
@@ -165,23 +170,27 @@ def test_personal_novelty_high_for_dissimilar_topic(client, monkeypatch):
         engagement_rate=0.5,
         collection_name="reels_test",
     )
-    monkeypatch.setattr(qc, "embed_text", lambda text, input_type="query": _unit_vector(7))
 
     novelty = qc.personal_novelty(
-        client, candidate_text="new topic", creator_id=creator_id, collection_name="reels_test"
+        client,
+        candidate_vector=_unit_vector(7),
+        creator_id=creator_id,
+        collection_name="reels_test",
     )
     assert novelty == pytest.approx(1.0, abs=1e-6)
 
 
-def test_personal_novelty_returns_one_with_no_history(client, monkeypatch):
-    monkeypatch.setattr(qc, "embed_text", lambda text, input_type="query": _unit_vector(0))
+def test_personal_novelty_returns_one_with_no_history(client):
     novelty = qc.personal_novelty(
-        client, candidate_text="anything", creator_id=uuid.uuid4(), collection_name="reels_test"
+        client,
+        candidate_vector=_unit_vector(0),
+        creator_id=uuid.uuid4(),
+        collection_name="reels_test",
     )
     assert novelty == 1.0
 
 
-def test_personal_novelty_respects_window_ignoring_older_similar_posts(client, monkeypatch):
+def test_personal_novelty_respects_window_ignoring_older_similar_posts(client):
     creator_id = uuid.uuid4()
     now = datetime.now(UTC)
 
@@ -205,11 +214,9 @@ def test_personal_novelty_respects_window_ignoring_older_similar_posts(client, m
         engagement_rate=0.5,
         collection_name="reels_test",
     )
-    monkeypatch.setattr(qc, "embed_text", lambda text, input_type="query": _unit_vector(0))
-
     novelty = qc.personal_novelty(
         client,
-        candidate_text="topic",
+        candidate_vector=_unit_vector(0),
         creator_id=creator_id,
         window=1,
         collection_name="reels_test",

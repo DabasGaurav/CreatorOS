@@ -5,7 +5,7 @@ import json
 
 from creatoros.config import get_settings
 from creatoros.content.schemas import ContentPackage
-from creatoros.llm.client import parse_structured
+from creatoros.llm.client import current_date_context, parse_structured
 from creatoros.opportunity.schemas import OpportunityCandidate
 from creatoros.research.schemas import ResearchEvidence
 
@@ -31,6 +31,7 @@ def generate_content_package(
 ) -> ContentPackage:
     settings = get_settings()
     user_message = (
+        f"{current_date_context()}\n\n"
         f"Selected recommendation:\n{selected_candidate.model_dump_json(indent=2)}\n\n"
         f"Research evidence:\n{evidence.model_dump_json(indent=2)}\n\n"
         f"Creator DNA:\n{json.dumps(creator_dna, indent=2, default=str)}"

@@ -3,11 +3,21 @@ Opportunity Generator, LLM Reranker, Content Generator). Model tiering per A6:
 Haiku for research/generation-volume steps, Sonnet for reranking/final content.
 """
 
+from datetime import UTC, datetime
+
 import anthropic
 from pydantic import BaseModel
 
 from creatoros.config import get_settings
 from creatoros.utils.retry import with_backoff
+
+
+def current_date_context() -> str:
+    """Every LLM-facing prompt in this pipeline needs today's date — without it,
+    models default to their training cutoff's sense of 'now' (confirmed live:
+    the Market Researcher generated a trends query for '2024' when actually run
+    in 2026), which is exactly wrong for an on-demand, freshness-sensitive tool."""
+    return f"Today's date: {datetime.now(UTC).strftime('%Y-%m-%d')}."
 
 RETRYABLE_EXCEPTIONS = (
     anthropic.RateLimitError,

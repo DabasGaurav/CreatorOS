@@ -19,38 +19,16 @@ def test_trend_momentum_averages_inputs():
 
 
 def test_niche_saturation_zero_with_no_niche_signal():
-    assert factors.niche_saturation(candidate_text="anything", niche_signal_texts=[]) == 0.0
+    assert factors.niche_saturation(candidate_vector=[1.0, 0.0], niche_vectors=[]) == 0.0
 
 
-def test_niche_saturation_high_for_similar_topic(monkeypatch):
-    def fake_embed_text(text, input_type="query"):
-        return [1.0, 0.0]
-
-    def fake_embed_texts(texts, input_type="document"):
-        return [[1.0, 0.0] for _ in texts]
-
-    monkeypatch.setattr(factors, "embed_text", fake_embed_text)
-    monkeypatch.setattr(factors, "embed_texts", fake_embed_texts)
-
-    score = factors.niche_saturation(
-        candidate_text="AI coding agents", niche_signal_texts=["AI coding agents trending"]
-    )
+def test_niche_saturation_high_for_similar_topic():
+    score = factors.niche_saturation(candidate_vector=[1.0, 0.0], niche_vectors=[[1.0, 0.0]])
     assert score == 1.0
 
 
-def test_niche_saturation_low_for_dissimilar_topic(monkeypatch):
-    def fake_embed_text(text, input_type="query"):
-        return [1.0, 0.0]
-
-    def fake_embed_texts(texts, input_type="document"):
-        return [[0.0, 1.0] for _ in texts]
-
-    monkeypatch.setattr(factors, "embed_text", fake_embed_text)
-    monkeypatch.setattr(factors, "embed_texts", fake_embed_texts)
-
-    score = factors.niche_saturation(
-        candidate_text="AI tools", niche_signal_texts=["cooking recipes"]
-    )
+def test_niche_saturation_low_for_dissimilar_topic():
+    score = factors.niche_saturation(candidate_vector=[1.0, 0.0], niche_vectors=[[0.0, 1.0]])
     assert score == 0.5  # orthogonal vectors remap to the midpoint
 
 

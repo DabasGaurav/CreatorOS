@@ -16,7 +16,6 @@ from qdrant_client import QdrantClient
 from qdrant_client.http import models as qm
 
 from creatoros.config import get_settings
-from creatoros.embeddings.voyage_client import embed_text
 
 # Voyage's cosine similarity is already in [-1, 1]; remap to [0, 1] so it composes
 # cleanly with the other [0, 1]-scaled ranking factors in Build Doc 2's CompositeScore.
@@ -148,14 +147,21 @@ def _remap_to_unit_interval(cosine_score: float) -> float:
 def creator_fit(
     client: QdrantClient,
     *,
-    candidate_text: str,
+    candidate_vector: list[float],
     creator_id: uuid.UUID,
     collection_name: str | None = None,
 ) -> float:
     """Match to what historically works for this creator: cosine similarity against
     the creator's own top-quartile-by-engagement Reels. Returns [0, 1]; 0.0 if the
     creator has no scored history yet (cold start — Build Doc 2 blends this with a
-    category prior, not this function's job)."""
+    category prior, not this function's job).
+
+    Takes a pre-computed embedding rather than raw text and calling Voyage itself
+    — a live ranking run showed this function and personal_novelty each embedding
+    the *same* candidate text separately, tripling Voyage calls per candidate
+    (creator_fit + personal_novelty + niche_saturation) and blowing through
+    Voyage's free-tier 3 RPM limit on a 20+ candidate batch. Callers should batch-
+    embed all candidates once via embed_texts() and pass the resulting vectors in."""
     points = fetch_creator_points(client, creator_id=creator_id, collection_name=collection_name)
     scored = [p for p in points if p.engagement_rate is not None]
     if not scored:
@@ -166,7 +172,6 @@ def creator_fit(
     if not top_performers:
         return 0.0
 
-    candidate_vector = embed_text(candidate_text, input_type="query")
     best = max(cosine_similarity(candidate_vector, p.vector) for p in top_performers)
     return _remap_to_unit_interval(best)
 
@@ -174,7 +179,7 @@ def creator_fit(
 def personal_novelty(
     client: QdrantClient,
     *,
-    candidate_text: str,
+    candidate_vector: list[float],
     creator_id: uuid.UUID,
     window: int | None = None,
     collection_name: str | None = None,
@@ -182,7 +187,9 @@ def personal_novelty(
     """Avoids over-repetition: 1 - max similarity against the creator's most recent
     N Reels (raw cosine, not remapped — unlike CreatorFit's [0,1] score, this is
     `1 - max_similarity` per spec, then clamped). High similarity to something just
-    posted = low novelty. Returns [0, 1]; 1.0 (maximally novel) with no recent history."""
+    posted = low novelty. Returns [0, 1]; 1.0 (maximally novel) with no recent history.
+
+    Takes a pre-computed embedding — see creator_fit's docstring for why."""
     settings = get_settings()
     n = window or settings.personal_novelty_window
     points = fetch_creator_points(client, creator_id=creator_id, collection_name=collection_name)
@@ -190,7 +197,6 @@ def personal_novelty(
         return 1.0
 
     recent = sorted(points, key=lambda p: p.posted_at_ts, reverse=True)[:n]
-    candidate_vector = embed_text(candidate_text, input_type="query")
     max_similarity = max(cosine_similarity(candidate_vector, p.vector) for p in recent)
     novelty = 1.0 - max_similarity
     return max(0.0, min(1.0, novelty))

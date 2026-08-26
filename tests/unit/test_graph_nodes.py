@@ -35,13 +35,21 @@ def test_pipeline_compiles_without_error():
 
 
 def test_ranking_node_sorts_by_composite_score_descending(monkeypatch):
+    # embed_texts is called once per cycle with all candidate texts, in order —
+    # the fake returns a per-candidate marker vector so creator_fit's fake can
+    # tell "bad idea" and "good idea" apart without needing real embeddings.
+    monkeypatch.setattr(
+        nodes_module,
+        "embed_texts",
+        lambda texts, input_type="query": [[0.1] if "bad" in t else [0.9] for t in texts],
+    )
     monkeypatch.setattr(
         nodes_module,
         "creator_fit",
-        lambda qdrant, candidate_text, creator_id: 0.9 if "good" in candidate_text else 0.1,
+        lambda qdrant, candidate_vector, creator_id: candidate_vector[0],
     )
     monkeypatch.setattr(
-        nodes_module, "personal_novelty", lambda qdrant, candidate_text, creator_id: 0.5
+        nodes_module, "personal_novelty", lambda qdrant, candidate_vector, creator_id: 0.5
     )
 
     ranking_node = ranking_node_factory(FakeSession(), FakeQdrant())

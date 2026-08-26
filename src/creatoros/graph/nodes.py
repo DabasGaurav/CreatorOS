@@ -15,6 +15,7 @@ from creatoros.content.reranker import rerank_and_explain
 from creatoros.content.schemas import ContentPackage
 from creatoros.dna.hooks import tag_hook_type
 from creatoros.embeddings.qdrant_client import creator_fit, personal_novelty
+from creatoros.embeddings.voyage_client import embed_texts
 from creatoros.evaluation import baselines
 from creatoros.graph.state import GraphState
 from creatoros.niche.repository import list_niche_signal
@@ -71,13 +72,21 @@ def ranking_node_factory(session: Session, qdrant: QdrantClient):
         niche_rows = list_niche_signal(session, niche=state["niche"])
         niche_texts = [r.observed_topic for r in niche_rows]
 
+        # Batch-embed once per cycle rather than per candidate per factor — a live
+        # ranking run showed creator_fit/personal_novelty/niche_saturation each
+        # separately re-embedding the same candidate text, multiplying Voyage
+        # calls by 3x per candidate and blowing through the free-tier 3 RPM limit
+        # on a real 20+ candidate batch.
+        candidate_texts = [_candidate_text(c) for c in state["candidates"]]
+        candidate_vectors = embed_texts(candidate_texts, input_type="query")
+        niche_vectors = embed_texts(niche_texts, input_type="document") if niche_texts else []
+
         weights = weights_from_settings()
         ranked = []
-        for candidate in state["candidates"]:
-            text = _candidate_text(candidate)
-            fit = creator_fit(qdrant, candidate_text=text, creator_id=creator_id)
-            p_novelty = personal_novelty(qdrant, candidate_text=text, creator_id=creator_id)
-            saturation = niche_saturation(candidate_text=text, niche_signal_texts=niche_texts)
+        for candidate, vector in zip(state["candidates"], candidate_vectors, strict=True):
+            fit = creator_fit(qdrant, candidate_vector=vector, creator_id=creator_id)
+            p_novelty = personal_novelty(qdrant, candidate_vector=vector, creator_id=creator_id)
+            saturation = niche_saturation(candidate_vector=vector, niche_vectors=niche_vectors)
             nov = novelty(personal_novelty=p_novelty, niche_saturation_score=saturation)
             demand = audience_demand(
                 normalized_search_volume=evidence_confidence,

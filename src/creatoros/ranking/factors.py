@@ -11,7 +11,6 @@ simple mean, documented as an assumption, not a spec-given rule.
 """
 
 from creatoros.embeddings.qdrant_client import cosine_similarity
-from creatoros.embeddings.voyage_client import embed_text, embed_texts
 
 
 def _clamp01(value: float) -> float:
@@ -36,16 +35,20 @@ def trend_momentum(*, trend_slope: float, discussion_velocity: float) -> float:
     return _clamp01((trend_slope + discussion_velocity) / 2)
 
 
-def niche_saturation(*, candidate_text: str, niche_signal_texts: list[str]) -> float:
+def niche_saturation(*, candidate_vector: list[float], niche_vectors: list[list[float]]) -> float:
     """High similarity to recently observed niche-wide topics (niche_signal, Build
     Doc 1 — manually curated, never scraped) means the topic is saturated in the
     creator's niche right now. Returns saturation in [0,1]; 0.0 (unsaturated) when
-    there's no niche_signal data yet to compare against."""
-    if not niche_signal_texts:
+    there's no niche_signal data yet to compare against.
+
+    Takes pre-computed embeddings rather than raw text — a live ranking run
+    showed this, CreatorFit, and PersonalNovelty each separately embedding the
+    same candidate text, tripling Voyage calls per candidate and blowing through
+    the free-tier 3 RPM limit on a real candidate batch. Callers should batch-
+    embed once via embed_texts() and pass the vectors in."""
+    if not niche_vectors:
         return 0.0
 
-    candidate_vector = embed_text(candidate_text, input_type="query")
-    niche_vectors = embed_texts(niche_signal_texts, input_type="document")
     max_similarity = max(cosine_similarity(candidate_vector, v) for v in niche_vectors)
     return _remap_cosine_to_unit(max_similarity)
 

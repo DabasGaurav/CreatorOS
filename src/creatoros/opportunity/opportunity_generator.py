@@ -5,7 +5,7 @@ candidates. No ranking happens here — that's the deterministic layer next."""
 import json
 
 from creatoros.config import get_settings
-from creatoros.llm.client import parse_structured
+from creatoros.llm.client import current_date_context, parse_structured
 from creatoros.opportunity.schemas import OpportunityCandidate, OpportunitySet
 from creatoros.research.schemas import ResearchEvidence
 
@@ -29,6 +29,7 @@ def generate_opportunities(
 ) -> list[OpportunityCandidate]:
     settings = get_settings()
     user_message = (
+        f"{current_date_context()}\n\n"
         f"Niche: {niche}\n\n"
         f"Creator DNA:\n{json.dumps(creator_dna, indent=2, default=str)}\n\n"
         f"Research evidence:\n{evidence.model_dump_json(indent=2)}\n\n"

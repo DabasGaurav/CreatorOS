@@ -42,8 +42,9 @@ def test_real_voyage_embedding_and_qdrant_roundtrip(qdrant_real_client):
         assert len(points) == 1
         assert points[0].reel_id == str(reel_id)
 
+        query_vector = embed_text("AI tools for startups", input_type="query")
         score = creator_fit(
-            qdrant_real_client, candidate_text="AI tools for startups", creator_id=creator_id
+            qdrant_real_client, candidate_vector=query_vector, creator_id=creator_id
         )
         assert 0.0 <= score <= 1.0
         assert score > 0.7  # should be highly similar to the seeded caption

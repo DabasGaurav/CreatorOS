@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#f8f4ee" />
+    <meta name="description" content="SalonNext, a salon-focused adaptation of CreatorOS, helps independent salons understand what Reel to make next and why." />
+    <title>SalonNext — Your next Reel, with a reason</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --ink: #232622;
+        --muted: #646b63;
+        --paper: #f8f4ee;
+        --surface: #fffdf9;
+        --line: #e5e0d8;
+        --green: #154c3b;
+        --green-soft: #e8f0e8;
+        --peach: #f2c5ae;
+        --orange: #d66b3f;
+        font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        scroll-behavior: smooth;
+      }
+
+      * { box-sizing: border-box; }
+      body { margin: 0; background: var(--paper); color: var(--ink); }
+      a { color: inherit; text-decoration: none; }
+      button { font: inherit; }
+      .container { width: min(1120px, calc(100% - 40px)); margin: 0 auto; }
+      .skip-link { position: absolute; top: -60px; left: 12px; z-index: 20; padding: 10px 14px; background: var(--ink); color: white; }
+      .skip-link:focus { top: 12px; }
+
+      .site-header { border-bottom: 1px solid var(--line); background: rgba(248,244,238,.94); }
+      .nav { min-height: 78px; display: flex; align-items: center; justify-content: space-between; gap: 24px; }
+      .brand { display: inline-flex; align-items: center; gap: 11px; font-weight: 800; font-size: 20px; letter-spacing: -.05em; }
+      .brand-mark { display: grid; place-items: center; width: 37px; height: 37px; border-radius: 11px; background: var(--green); color: #fff9ef; font-family: Georgia, serif; font-size: 20px; font-style: italic; font-weight: 700; }
+      .nav-links { display: flex; align-items: center; gap: 31px; font-size: 14px; color: #414941; }
+      .nav-links a:hover, .text-link:hover { color: var(--orange); }
+      .button { display: inline-flex; align-items: center; justify-content: center; gap: 9px; min-height: 47px; padding: 0 19px; border: 1px solid transparent; border-radius: 10px; background: var(--green); color: white; font-size: 14px; font-weight: 700; transition: transform .15s, background .15s; }
+      .button:hover { background: #0e382b; transform: translateY(-1px); }
+      .button:focus-visible, a:focus-visible { outline: 3px solid var(--orange); outline-offset: 3px; }
+      .button-light { background: var(--surface); border-color: var(--line); color: var(--ink); }
+      .button-light:hover { background: white; }
+      .button-peach { background: var(--peach); color: #2f281f; }
+      .button-peach:hover { background: #f5d3c1; }
+
+      .hero { padding: 77px 0 96px; overflow: hidden; }
+      .hero-grid { display: grid; grid-template-columns: 1fr 1fr; align-items: center; gap: 74px; }
+      .eyebrow { display: inline-flex; align-items: center; gap: 8px; margin: 0 0 20px; color: var(--green); font-size: 12px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+      .eyebrow::before { content: ""; width: 20px; height: 2px; background: var(--orange); }
+      h1, h2, h3, p { margin-top: 0; }
+      h1, h2, .display { font-family: Georgia, "Times New Roman", serif; font-weight: 500; letter-spacing: -.052em; }
+      h1 { max-width: 600px; margin-bottom: 22px; font-size: clamp(54px, 6.4vw, 86px); line-height: .99; }
+      h1 em, h2 em { color: var(--orange); font-weight: 400; }
+      .hero-copy { max-width: 500px; margin-bottom: 27px; color: #4b524b; font-size: 18px; line-height: 1.65; }
+      .hero-actions { display: flex; flex-wrap: wrap; gap: 11px; }
+      .hero-note { margin: 18px 0 0; color: var(--muted); font-size: 12px; }
+
+      .preview-wrap { position: relative; padding: 25px 8px 21px 15px; }
+      .preview-wrap::before { content: ""; position: absolute; inset: 2% -10% 3% 8%; border-radius: 50%; background: radial-gradient(circle, #f2d6c6 0, #eee8db 62%, transparent 72%); filter: blur(10px); }
+      .preview { position: relative; transform: rotate(1.6deg); overflow: hidden; padding: 21px; border: 1px solid #e7e1d9; border-radius: 24px; background: var(--surface); box-shadow: 0 28px 62px rgba(47,48,36,.16); }
+      .preview-top { display: flex; justify-content: space-between; align-items: center; padding-bottom: 17px; border-bottom: 1px solid var(--line); }
+      .preview-brand { font-size: 13px; font-weight: 800; }
+      .preview-pill { padding: 6px 9px; border-radius: 20px; background: var(--green-soft); color: var(--green); font-size: 10px; font-weight: 700; }
+      .preview-label { margin: 20px 0 6px; color: var(--muted); font-size: 10px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
+      .preview-title { margin-bottom: 15px; font-family: Georgia, serif; font-size: 25px; letter-spacing: -.035em; }
+      .idea { display: grid; grid-template-columns: 27px 1fr; gap: 11px; padding: 13px 0; border-top: 1px solid var(--line); }
+      .idea-number { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 8px; background: #f7e8df; color: #90442c; font-size: 11px; font-weight: 800; }
+      .idea strong { display: block; margin: 1px 0 5px; font-size: 13px; }
+      .idea p { margin: 0; color: var(--muted); font-size: 11px; line-height: 1.5; }
+      .preview-receipt { display: grid; gap: 7px; margin-top: 13px; padding: 13px; border-radius: 10px; background: #edf2ed; }
+      .preview-receipt strong { color: var(--green); font-size: 11px; }
+      .preview-receipt span { color: #526356; font-size: 10px; line-height: 1.4; }
+      .preview-foot { margin-top: 13px; padding: 10px 12px; border-radius: 9px; background: #f3f1eb; color: #5e655e; font-size: 10px; line-height: 1.4; }
+      .floating-tag { position: absolute; right: -19px; bottom: 44px; transform: rotate(-4deg); padding: 10px 14px; border-radius: 8px; background: var(--green); box-shadow: 0 10px 25px rgba(21,76,59,.25); color: #fff; font-size: 12px; font-weight: 700; }
+
+      .section { padding: 87px 0; }
+      .section-white { background: var(--surface); }
+      .section-heading { max-width: 700px; margin-bottom: 38px; }
+      h2 { margin-bottom: 13px; font-size: clamp(37px, 4vw, 55px); line-height: 1.1; }
+      .section-heading > p:last-child { max-width: 590px; margin-bottom: 0; color: var(--muted); font-size: 16px; line-height: 1.65; }
+      .three-col { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+      .feature-card { min-height: 210px; padding: 27px; border: 1px solid var(--line); border-radius: 15px; background: var(--paper); }
+      .feature-icon { display: grid; place-items: center; width: 36px; height: 36px; margin-bottom: 27px; border-radius: 10px; background: #e9d3c4; color: #874428; font-size: 17px; }
+      .feature-card h3 { margin-bottom: 9px; font-size: 18px; letter-spacing: -.03em; }
+      .feature-card p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.65; }
+
+      .how-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 90px; align-items: start; }
+      .steps { display: grid; gap: 16px; }
+      .step { display: grid; grid-template-columns: 42px 1fr; gap: 14px; padding: 0 0 17px; border-bottom: 1px solid #dcd8cf; }
+      .step span { display: grid; place-items: center; width: 34px; height: 34px; border: 1px solid #c7d5ca; border-radius: 50%; color: var(--green); font-family: Georgia, serif; font-size: 15px; }
+      .step h3 { margin-bottom: 5px; font-size: 16px; }
+      .step p { margin-bottom: 0; color: var(--muted); font-size: 13px; line-height: 1.65; }
+      .note-box { margin-top: 20px; padding: 16px 18px; border-left: 3px solid var(--orange); background: #f5eee5; color: #626058; font-size: 12px; line-height: 1.55; }
+
+      .sample { background: #153e32; color: #fff9f0; }
+      .sample .eyebrow, .sample h2 em { color: #f0be9f; }
+      .sample .section-heading > p:last-child { color: #c8d8ce; }
+      .sample-card { display: grid; grid-template-columns: minmax(160px, .72fr) 1.28fr; overflow: hidden; border: 1px solid rgba(255,255,255,.18); border-radius: 18px; background: #fffaf3; color: var(--ink); }
+      .sample-side { display: flex; flex-direction: column; justify-content: space-between; gap: 30px; padding: 31px; background: #e9d4c6; }
+      .sample-side span { align-self: start; padding: 6px 10px; border-radius: 20px; background: #fff7ef; color: #7b4a37; font-size: 11px; font-weight: 800; }
+      .sample-side h3 { max-width: 230px; margin-bottom: 8px; font-family: Georgia, serif; font-size: 32px; font-weight: 500; line-height: 1.1; letter-spacing: -.04em; }
+      .sample-side p { margin: 0; color: #715b50; font-size: 12px; line-height: 1.6; }
+      .sample-main { padding: 31px 36px; }
+      .sample-main .mini-label { color: var(--orange); font-size: 11px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
+      .sample-main h3 { margin: 13px 0 17px; font-family: Georgia, serif; font-size: 31px; font-weight: 500; letter-spacing: -.04em; }
+      .sample-main p { color: #4c544d; font-size: 14px; line-height: 1.65; }
+      .reason { margin: 22px 0 0; padding: 15px 17px; border-radius: 10px; background: var(--green-soft); color: #27523e; font-size: 12px; line-height: 1.55; }
+      .sample-caption { margin: 18px 0 0; color: #acc4b5; font-size: 11px; }
+
+      .final-cta { padding: 88px 0; text-align: center; }
+      .final-cta h2 { max-width: 640px; margin: 0 auto 15px; }
+      .final-cta p { max-width: 580px; margin: 0 auto 27px; color: var(--muted); font-size: 16px; line-height: 1.6; }
+      .footer { padding: 26px 0; border-top: 1px solid var(--line); }
+      .footer-row { display: flex; justify-content: space-between; align-items: center; gap: 20px; color: var(--muted); font-size: 12px; }
+
+      @media (max-width: 850px) {
+        .hero-grid, .how-grid { grid-template-columns: 1fr; gap: 35px; }
+        .hero { padding-top: 55px; }
+        .preview-wrap { max-width: 580px; margin: 0 auto; }
+        .three-col { grid-template-columns: 1fr; }
+        .feature-card { min-height: 0; }
+        .nav-links { display: none; }
+      }
+      @media (max-width: 600px) {
+        .container { width: min(100% - 32px, 1120px); }
+        .nav { min-height: 67px; }
+        .nav .button { min-height: 40px; padding: 0 12px; font-size: 12px; }
+        .brand { font-size: 18px; }
+        .hero { padding: 48px 0 65px; }
+        h1 { font-size: clamp(47px, 13vw, 64px); }
+        .hero-copy { font-size: 16px; }
+        .preview-wrap { padding-right: 8px; padding-left: 4px; }
+        .floating-tag { right: -4px; bottom: 20px; font-size: 10px; }
+        .section { padding: 66px 0; }
+        .sample-card { grid-template-columns: 1fr; }
+        .sample-side, .sample-main { padding: 25px; }
+        .sample-side { gap: 14px; }
+        .sample-side h3 { max-width: none; }
+        .footer-row { flex-direction: column; align-items: start; }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        :root { scroll-behavior: auto; }
+        .button { transition: none; }
+      }
+    </style>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <header class="site-header">
+      <nav class="container nav" aria-label="Main navigation">
+        <a class="brand" href="#top" aria-label="SalonNext home"><span class="brand-mark">S</span><span>salonnext</span></a>
+        <div class="nav-links"><a href="#why">Why SalonNext</a><a href="#how">How it works</a><a href="#sample">Example plan</a></div>
+        <a class="button" href="#sample">See an example <span aria-hidden="true">↗</span></a>
+      </nav>
+    </header>
+
+    <main id="main">
+      <section class="hero" id="top" aria-labelledby="hero-title">
+        <div class="container hero-grid">
+          <div>
+            <p class="eyebrow">CreatorOS, adapted for independent salons</p>
+            <h1 id="hero-title">Your next Reel, <em>with a reason.</em></h1>
+            <p class="hero-copy">Staring at your phone while juggling clients? SalonNext is being designed to turn your salon’s posting history and niche signals into one idea you can film, with a clear reason and a ready-to-shoot plan.</p>
+            <div class="hero-actions"><a class="button" href="#sample">See a sample plan <span aria-hidden="true">↗</span></a><a class="button button-light" href="#how">How it works</a></div>
+            <p class="hero-note">A salon-focused product concept. The recommendation below is illustrative.</p>
+          </div>
+
+          <div class="preview-wrap" aria-label="Illustrative SalonNext recommendation preview">
+            <div class="preview">
+              <div class="preview-top"><span class="preview-brand">salonnext <span aria-hidden="true">✦</span></span><span class="preview-pill">Illustrative pick</span></div>
+              <p class="preview-label">Saffron Studio · fictional salon</p>
+              <p class="preview-title">Your next Reel</p>
+              <div class="idea"><span class="idea-number">01</span><div><strong>Three wedding-guest hairstyles</strong><p>A practical styling Reel with a hook, a short script, shots to capture, a caption, and a call to action.</p></div></div>
+              <div class="preview-receipt"><strong>Why now / why your salon</strong><span>A real recommendation would separate current niche evidence from what the salon’s own posts show. Thin evidence should be labeled as such.</span></div>
+              <div class="preview-foot">Sample only. No live account, research result, or performance score is represented here.</div>
+            </div>
+            <span class="floating-tag">One idea. Clear reason.</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="section section-white" id="why" aria-labelledby="why-title">
+        <div class="container">
+          <div class="section-heading"><p class="eyebrow">The everyday problem</p><h2 id="why-title">Good with clients. <em>Short on content time.</em></h2><p>Between appointments, inventory, and messages, deciding what to film can become one more task on an already full day.</p></div>
+          <div class="three-col">
+            <article class="feature-card"><div class="feature-icon" aria-hidden="true">✦</div><h3>Learn your salon’s style</h3><p>CreatorOS builds a profile from connected Instagram Reels, highlighting recurring topics and formats.</p></article>
+            <article class="feature-card"><div class="feature-icon" aria-hidden="true">↗</div><h3>Research before suggesting</h3><p>The existing engine can check niche signals from YouTube, Reddit, and Google Trends when those sources are available.</p></article>
+            <article class="feature-card"><div class="feature-icon" aria-hidden="true">◌</div><h3>Show the reasoning</h3><p>Its recommendation includes an evidence breakdown plus a hook, script, storyboard, caption, and call to action.</p></article>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="how" aria-labelledby="how-title">
+        <div class="container how-grid">
+          <div><p class="eyebrow">From the existing engine</p><h2 id="how-title">From your history to <em>one next move.</em></h2><p class="hero-copy">The salon edition will adapt CreatorOS’s recommendation flow. You stay in control of what you film and publish.</p><div class="note-box">This is a landing-page concept, not a live salon recommendation. CreatorOS currently requires a connected Instagram Business or Creator account. A simpler hands-on demo is planned for the next assignment task.</div></div>
+          <div class="steps">
+            <div class="step"><span>1</span><div><h3>Connect your Instagram account</h3><p>The existing app reads Reels and available performance metrics from a Business or Creator account.</p></div></div>
+            <div class="step"><span>2</span><div><h3>Build your salon profile</h3><p>Past topics, hooks, formats, and recent repetition inform the recommendation.</p></div></div>
+            <div class="step"><span>3</span><div><h3>Get one Reel recommendation</h3><p>See what to make, why it was chosen, and a complete starting script.</p></div></div>
+            <div class="step"><span>4</span><div><h3>Learn from the outcome</h3><p>After a new Reel is published, the existing system can compare its result with the recommendation.</p></div></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section sample" id="sample" aria-labelledby="sample-title">
+        <div class="container">
+          <div class="section-heading"><p class="eyebrow">What the answer looks like</p><h2 id="sample-title">An idea you can <em>actually film.</em></h2><p>This fictional example follows CreatorOS’s selected recommendation and content-package structure. It is not a live result.</p></div>
+          <div class="sample-card">
+            <div class="sample-side"><span>Illustrative example</span><div><h3>Festive looks, without a full production crew.</h3><p>For a salon offering occasion styling.</p></div></div>
+            <div class="sample-main"><span class="mini-label">One recommendation · illustrative</span><h3>Three wedding-guest hairstyles</h3><p><strong>Hook:</strong> “Wedding this weekend? Three looks you can save now.”</p><p><strong>Storyboard:</strong> Show three finished looks, one close-up per style, and a final invitation to book. Film with a phone in good natural light.</p><div class="reason"><strong>Why this might fit:</strong> If styling tutorials performed well in the salon’s recent posts, another practical tutorial could be worth testing. Current trend evidence would need to be checked separately. This is a suggestion, not a performance guarantee.</div></div>
+          </div>
+          <p class="sample-caption">Sample content is fictional and does not represent a real salon’s analytics.</p>
+        </div>
+      </section>
+
+      <section class="final-cta" aria-labelledby="cta-title"><div class="container"><p class="eyebrow">Make the next Reel easier</p><h2 id="cta-title">Less guessing. <em>More creating.</em></h2><p>SalonNext is a salon-focused adaptation of CreatorOS. The landing page shows the vision; the first working demo will let a salon owner try the core idea.</p><a class="button button-peach" href="#top">Back to the beginning ↑</a></div></section>
+    </main>
+
+    <footer class="footer"><div class="container footer-row"><a class="brand" href="#top"><span class="brand-mark">S</span><span>salonnext</span></a><span>Salon concept adapted from <a class="text-link" href="https://github.com/DabasGaurav/CreatorOS">CreatorOS</a>. Example content is fictional.</span></div></footer>
+  </body>
+</html>

@@ -109,7 +109,7 @@ function CoreScreen() {
   return (
     <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-8 sm:px-6">
       <div className="mb-8 flex items-start justify-between gap-4">
-        <h1 className="font-display text-3xl font-semibold text-ink sm:text-4xl">CreatorOS</h1>
+        <h1 className="font-display text-3xl font-semibold text-ink sm:text-4xl">CreatorSignal.ai</h1>
         <button
           type="button"
           onClick={() => {

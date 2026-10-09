@@ -1,11 +1,11 @@
-// Mirrors the FastAPI backend's response shapes (src/creatoros/api/main.py,
-// src/creatoros/db/models.py). Kept as plain types, not a shared codegen
+// Mirrors the FastAPI backend's response shapes (src/creatorsignal/api/main.py,
+// src/creatorsignal/db/models.py). Kept as plain types, not a shared codegen
 // artifact — the backend is the source of truth; update both sides by hand
 // when either changes.
 
 export type RecommendationStatus = "pending" | "running" | "completed" | "failed";
 
-// Mirrors src/creatoros/api/main.py's _NODE_TO_STAGE mapping.
+// Mirrors src/creatorsignal/api/main.py's _NODE_TO_STAGE mapping.
 export type RecommendationStage = "research" | "candidates" | "ranked" | "selected" | "written";
 
 export const STAGE_ORDER: RecommendationStage[] = [

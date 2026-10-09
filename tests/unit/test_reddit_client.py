@@ -1,7 +1,7 @@
 
 import pytest
 
-from creatoros.research import reddit_client
+from creatorsignal.research import reddit_client
 
 
 def test_get_reddit_client_raises_when_not_configured(monkeypatch):

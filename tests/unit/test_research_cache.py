@@ -1,6 +1,6 @@
 from datetime import UTC, datetime, timedelta
 
-from creatoros.research import cache as cache_module
+from creatorsignal.research import cache as cache_module
 
 
 class FakeSession:

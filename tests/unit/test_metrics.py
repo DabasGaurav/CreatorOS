@@ -1,4 +1,4 @@
-from creatoros.dna.metrics import compute_engagement_rate
+from creatorsignal.dna.metrics import compute_engagement_rate
 
 
 def test_compute_engagement_rate_basic():

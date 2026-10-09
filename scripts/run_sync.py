@@ -8,9 +8,9 @@ Usage:
 import argparse
 import sys
 
-from creatoros.db.base import get_session
-from creatoros.db.models import Creator
-from creatoros.instagram.sync import sync_creator_history
+from creatorsignal.db.base import get_session
+from creatorsignal.db.models import Creator
+from creatorsignal.instagram.sync import sync_creator_history
 
 
 def main() -> int:

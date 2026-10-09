@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from creatoros.ranking.feature_engineering import (
+from creatorsignal.ranking.feature_engineering import (
     build_feature_dict,
     encode_format,
     encode_hook_type,

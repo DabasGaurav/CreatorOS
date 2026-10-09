@@ -1,4 +1,4 @@
-from creatoros.dna.formats import (
+from creatorsignal.dna.formats import (
     EXTENDED,
     LONG_FORM,
     NON_REEL,

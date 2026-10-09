@@ -2,8 +2,8 @@
 import pytest
 from cryptography.fernet import Fernet
 
-from creatoros.instagram import repository
-from creatoros.security import crypto
+from creatorsignal.instagram import repository
+from creatorsignal.security import crypto
 
 
 @pytest.fixture(autouse=True)

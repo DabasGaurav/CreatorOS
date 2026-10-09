@@ -9,8 +9,8 @@ Usage:
 
 import argparse
 
-from creatoros.db.base import get_session
-from creatoros.instagram.repository import invite_creator
+from creatorsignal.db.base import get_session
+from creatorsignal.instagram.repository import invite_creator
 
 
 def main() -> int:

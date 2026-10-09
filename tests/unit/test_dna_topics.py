@@ -1,4 +1,4 @@
-from creatoros.dna.topics import cluster_reels, label_cluster
+from creatorsignal.dna.topics import cluster_reels, label_cluster
 
 
 def _unit_vector(dim: int, index: int) -> list[float]:

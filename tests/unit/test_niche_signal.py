@@ -2,8 +2,8 @@ from datetime import UTC, datetime
 
 from click.testing import CliRunner
 
-from creatoros.niche import cli as niche_cli
-from creatoros.niche.repository import add_niche_signal, list_niche_signal
+from creatorsignal.niche import cli as niche_cli
+from creatorsignal.niche.repository import add_niche_signal, list_niche_signal
 
 
 class FakeSession:

@@ -1,5 +1,5 @@
-from creatoros.db.base import Base
-from creatoros.db.models import CreatorDNA, NicheSignal, Reel, ReelInsight
+from creatorsignal.db.base import Base
+from creatorsignal.db.models import CreatorDNA, NicheSignal, Reel, ReelInsight
 
 
 def test_expected_tables_registered():

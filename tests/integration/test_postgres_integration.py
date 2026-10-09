@@ -1,8 +1,8 @@
 import pytest
 from sqlalchemy import inspect
 
-from creatoros.db.base import get_engine
-from creatoros.niche.repository import add_niche_signal, list_niche_signal
+from creatorsignal.db.base import get_engine
+from creatorsignal.niche.repository import add_niche_signal, list_niche_signal
 
 pytestmark = pytest.mark.integration
 

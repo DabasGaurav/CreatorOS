@@ -23,7 +23,7 @@ export default function SignInPage() {
 
   return (
     <main className="mx-auto flex min-h-screen max-w-sm flex-col justify-center px-6">
-      <h1 className="mb-2 font-display text-3xl font-semibold text-ink">CreatorOS</h1>
+      <h1 className="mb-2 font-display text-3xl font-semibold text-ink">CreatorSignal.ai</h1>
       <p className="mb-8 font-body text-sm text-ink-muted">
         Sign in with your email — we&apos;ll send you a link, no password needed.
       </p>

@@ -1,7 +1,7 @@
 [project]
-name = "creatoros"
+name = "creatorsignal"
 version = "0.1.0"
-description = "CreatorOS — agentic recommendation system for Instagram Reels creators."
+description = "CreatorSignal.ai — agentic recommendation system for Instagram Reels creators."
 requires-python = ">=3.11"
 dependencies = [
     "sqlalchemy>=2.0",
@@ -55,11 +55,11 @@ select = ["E", "F", "I", "UP", "B"]
 # Alembic's own templates (env.py, migration revisions) use Union/Sequence-style
 # annotations for compatibility with older Python; keep them close to Alembic's
 # generated conventions rather than reformatting generated/templated code.
-"src/creatoros/migrations/**" = ["UP007", "UP006", "UP035", "I001"]
+"src/creatorsignal/migrations/**" = ["UP007", "UP006", "UP035", "I001"]
 
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/creatoros"]
+packages = ["src/creatorsignal"]

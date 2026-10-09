@@ -1,7 +1,7 @@
 from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 
-from creatoros.instagram import token_refresh
+from creatorsignal.instagram import token_refresh
 
 
 class FakeQuery:

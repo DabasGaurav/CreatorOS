@@ -10,7 +10,7 @@ Usage:
 
 import argparse
 
-from creatoros.instagram.tester_admin import (
+from creatorsignal.instagram.tester_admin import (
     get_invite_status,
     print_manual_invite_instructions,
     record_invite_accepted,

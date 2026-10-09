@@ -1,6 +1,6 @@
 import random
 
-from creatoros.evaluation import baselines
+from creatorsignal.evaluation import baselines
 
 
 def _candidates():

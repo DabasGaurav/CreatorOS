@@ -1,6 +1,6 @@
 from datetime import UTC, datetime, timedelta
 
-from creatoros.dna.aggregate import ReelForDNA, compute_dna
+from creatorsignal.dna.aggregate import ReelForDNA, compute_dna
 
 BASE_TIME = datetime(2026, 1, 1, tzinfo=UTC)
 

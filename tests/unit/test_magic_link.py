@@ -1,9 +1,9 @@
 import uuid
 from datetime import UTC, datetime, timedelta
 
-from creatoros.auth import magic_link as ml
-from creatoros.db.models import Creator, MagicLinkToken
-from creatoros.db.models import Session as SessionModel
+from creatorsignal.auth import magic_link as ml
+from creatorsignal.db.models import Creator, MagicLinkToken
+from creatorsignal.db.models import Session as SessionModel
 
 
 class FakeQuery:

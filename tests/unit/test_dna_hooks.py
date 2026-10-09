@@ -1,6 +1,6 @@
 import pytest
 
-from creatoros.dna.hooks import UNKNOWN, tag_hook_type
+from creatorsignal.dna.hooks import UNKNOWN, tag_hook_type
 
 
 @pytest.mark.parametrize(

@@ -2,7 +2,7 @@ import httpx
 import pytest
 import respx
 
-from creatoros.instagram import oauth
+from creatorsignal.instagram import oauth
 
 
 @pytest.fixture(autouse=True)

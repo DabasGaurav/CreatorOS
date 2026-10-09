@@ -1,6 +1,6 @@
 import pytest
 
-from creatoros.ranking import factors
+from creatorsignal.ranking import factors
 
 
 def test_audience_demand_averages_inputs():

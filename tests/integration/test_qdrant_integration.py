@@ -3,14 +3,14 @@ from datetime import UTC, datetime
 
 import pytest
 
-from creatoros.config import get_settings
-from creatoros.embeddings.qdrant_client import (
+from creatorsignal.config import get_settings
+from creatorsignal.embeddings.qdrant_client import (
     creator_fit,
     ensure_collection,
     fetch_creator_points,
     upsert_reel_point,
 )
-from creatoros.embeddings.voyage_client import embed_text
+from creatorsignal.embeddings.voyage_client import embed_text
 
 pytestmark = pytest.mark.integration
 

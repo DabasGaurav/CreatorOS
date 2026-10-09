@@ -2,7 +2,7 @@ import uuid
 from datetime import UTC, datetime
 from types import SimpleNamespace
 
-from creatoros.embeddings import job as job_module
+from creatorsignal.embeddings import job as job_module
 
 
 class FakeInsightQuery:

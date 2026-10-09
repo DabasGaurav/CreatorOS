@@ -20,16 +20,16 @@ import threading
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from urllib.parse import parse_qs, urlparse
 
-from creatoros.db.base import get_session
-from creatoros.instagram.client import GraphAPIClient
-from creatoros.instagram.oauth import (
+from creatorsignal.db.base import get_session
+from creatorsignal.instagram.client import GraphAPIClient
+from creatorsignal.instagram.oauth import (
     build_authorize_url,
     compute_expiry,
     exchange_code_for_token,
     exchange_short_for_long_lived_token,
     generate_state,
 )
-from creatoros.instagram.repository import upsert_creator
+from creatorsignal.instagram.repository import upsert_creator
 
 
 class _CallbackResult:

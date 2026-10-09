@@ -1,7 +1,7 @@
 import pytest
 from cryptography.fernet import Fernet
 
-from creatoros.security import crypto
+from creatorsignal.security import crypto
 
 
 @pytest.fixture(autouse=True)

@@ -11,10 +11,10 @@ Usage:
 import argparse
 import sys
 
-from creatoros.db.base import get_session
-from creatoros.db.models import Creator
-from creatoros.embeddings.qdrant_client import get_client
-from creatoros.outcome.outcome_tracking import run_outcome_tracking_for_creator
+from creatorsignal.db.base import get_session
+from creatorsignal.db.models import Creator
+from creatorsignal.embeddings.qdrant_client import get_client
+from creatorsignal.outcome.outcome_tracking import run_outcome_tracking_for_creator
 
 
 def main() -> int:

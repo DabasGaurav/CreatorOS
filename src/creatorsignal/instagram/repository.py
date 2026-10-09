@@ -1,0 +1,180 @@
+import uuid
+from datetime import datetime
+
+from sqlalchemy.orm import Session
+
+from creatorsignal.db.models import Creator, Reel, ReelInsight
+from creatorsignal.security.crypto import encrypt_token
+
+
+def get_latest_insight(session: Session, reel_id: uuid.UUID) -> ReelInsight | None:
+    return (
+        session.query(ReelInsight)
+        .filter(ReelInsight.reel_id == reel_id)
+        .order_by(ReelInsight.fetched_at.desc())
+        .first()
+    )
+
+
+def invite_creator(session: Session, *, email: str, niche: str) -> Creator:
+    """Founder-initiated invite (Build Doc 3 onboarding) — creates a bare
+    creator row with just email+niche, matching the spec's beta model where
+    the founder adds each creator individually rather than public self-serve
+    signup (A5). instagram_user_id/token stay null until the creator signs in
+    and clicks "Connect Instagram" themselves."""
+    creator = Creator(email=email, niche=niche)
+    session.add(creator)
+    session.commit()
+    session.refresh(creator)
+    return creator
+
+
+def attach_instagram_account(
+    session: Session,
+    *,
+    creator_id: uuid.UUID,
+    instagram_user_id: str,
+    display_name: str,
+    access_token: str,
+    token_expires_at: datetime,
+) -> Creator:
+    """Fills in the Instagram fields on an already-invited creator (matched by
+    creator_id from their signed-in session), as opposed to upsert_creator's
+    match-by-instagram_user_id (used by the CLI connect script for the older
+    founder-runs-the-script flow, Build Doc 1)."""
+    creator = session.get(Creator, creator_id)
+    if creator is None:
+        raise ValueError(f"No creator with id {creator_id}")
+    creator.instagram_user_id = instagram_user_id
+    creator.display_name = display_name
+    creator.token = encrypt_token(access_token)
+    creator.token_expires_at = token_expires_at
+    session.commit()
+    session.refresh(creator)
+    return creator
+
+
+def upsert_creator(
+    session: Session,
+    *,
+    instagram_user_id: str,
+    display_name: str,
+    niche: str,
+    access_token: str,
+    token_expires_at: datetime,
+) -> Creator:
+    creator = (
+        session.query(Creator).filter(Creator.instagram_user_id == instagram_user_id).one_or_none()
+    )
+    encrypted = encrypt_token(access_token)
+    if creator is None:
+        creator = Creator(
+            instagram_user_id=instagram_user_id,
+            display_name=display_name,
+            niche=niche,
+            token=encrypted,
+            token_expires_at=token_expires_at,
+        )
+        session.add(creator)
+    else:
+        creator.token = encrypted
+        creator.token_expires_at = token_expires_at
+        creator.display_name = display_name
+        creator.niche = niche
+    session.commit()
+    session.refresh(creator)
+    return creator
+
+
+def parse_media_fields(raw_media: dict) -> dict:
+    """Extract the metadata Build Doc 1 needs pulled out of raw_media_json so later
+    jobs don't re-parse JSONB — spec doesn't guarantee duration on every media object
+    (Reels vs. images), so this degrades to None rather than raising."""
+    # Confirmed against Meta's current IG Media field reference during Build Doc 1
+    # integration testing: there is NO duration field on the IG Media object at
+    # all, on any API version — not "video_duration", not anything else. This is a
+    # real, permanent Graph API gap, not a wrong field name. duration_seconds stays
+    # None for every real reel until/unless a future phase downloads media_url and
+    # inspects the video file directly (out of scope for Phase 1's data-plumbing-
+    # only mandate). Callers (typical_length_range, format duration buckets)
+    # already degrade gracefully when this is None.
+    is_reel = raw_media.get("media_product_type") == "REELS"
+    return {
+        "duration_seconds": raw_media.get("video_duration") if is_reel else None,
+        "media_product_type": raw_media.get("media_product_type"),
+    }
+
+
+def upsert_reel(session: Session, *, creator_id: uuid.UUID, raw_media: dict) -> Reel:
+    instagram_media_id = raw_media["id"]
+    reel = (
+        session.query(Reel)
+        .filter(Reel.creator_id == creator_id, Reel.instagram_media_id == instagram_media_id)
+        .one_or_none()
+    )
+    extracted = parse_media_fields(raw_media)
+    duration = extracted["duration_seconds"]
+    posted_at = _parse_timestamp(raw_media.get("timestamp"))
+
+    if reel is None:
+        reel = Reel(
+            creator_id=creator_id,
+            instagram_media_id=instagram_media_id,
+            caption=raw_media.get("caption"),
+            posted_at=posted_at,
+            raw_media_json=raw_media,
+            duration_seconds=duration,
+            media_product_type=extracted["media_product_type"],
+        )
+        session.add(reel)
+    else:
+        reel.caption = raw_media.get("caption")
+        reel.posted_at = posted_at
+        reel.raw_media_json = raw_media
+        reel.duration_seconds = duration
+        reel.media_product_type = extracted["media_product_type"]
+    session.commit()
+    session.refresh(reel)
+    return reel
+
+
+def _parse_timestamp(value: str | None) -> datetime:
+    if not value:
+        raise ValueError("Media object missing required 'timestamp' field")
+    return datetime.fromisoformat(value.replace("Z", "+00:00"))
+
+
+def parse_insights_metrics(raw_insights: dict) -> dict[str, int | None]:
+    """Graph API returns {"data": [{"name": "reach", "values": [{"value": N}]}, ...]} —
+    flatten into a simple metric -> value dict. Missing metrics are left None rather
+    than defaulted to 0, so 'not returned by the API' stays distinguishable from 'zero'.
+
+    "plays" (the metric name in the original spec) was rejected by a live API call
+    during integration testing — Meta now calls it "views". The DB column stays
+    named `plays` (schema stability); only the API-side mapping changed."""
+    metrics: dict[str, int | None] = {
+        "reach": None,
+        "likes": None,
+        "comments": None,
+        "shares": None,
+        "saves": None,
+        "plays": None,
+    }
+    name_map = {"saved": "saves", "views": "plays"}
+    for entry in raw_insights.get("data", []):
+        name = name_map.get(entry.get("name"), entry.get("name"))
+        if name not in metrics:
+            continue
+        values = entry.get("values", [])
+        if values:
+            metrics[name] = values[0].get("value")
+    return metrics
+
+
+def add_reel_insight(session: Session, *, reel_id: uuid.UUID, raw_insights: dict) -> ReelInsight:
+    metrics = parse_insights_metrics(raw_insights)
+    row = ReelInsight(reel_id=reel_id, raw_insights_json=raw_insights, **metrics)
+    session.add(row)
+    session.commit()
+    session.refresh(row)
+    return row

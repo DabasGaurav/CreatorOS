@@ -2,7 +2,7 @@ import httpx
 import pytest
 import respx
 
-from creatoros.research import youtube_client
+from creatorsignal.research import youtube_client
 
 
 def test_search_videos_raises_when_not_configured(monkeypatch):

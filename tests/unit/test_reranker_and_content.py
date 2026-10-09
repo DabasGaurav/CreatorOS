@@ -1,8 +1,8 @@
-from creatoros.content import content_generator as cg
-from creatoros.content import reranker as rr
-from creatoros.content.schemas import ContentPackage, RerankerOutput
-from creatoros.opportunity.schemas import OpportunityCandidate
-from creatoros.research.schemas import ResearchEvidence
+from creatorsignal.content import content_generator as cg
+from creatorsignal.content import reranker as rr
+from creatorsignal.content.schemas import ContentPackage, RerankerOutput
+from creatorsignal.opportunity.schemas import OpportunityCandidate
+from creatorsignal.research.schemas import ResearchEvidence
 
 
 def _candidate():

@@ -1,4 +1,4 @@
-from creatoros.ranking.composite_score import CompositeWeights, FactorScores, composite_score
+from creatorsignal.ranking.composite_score import CompositeWeights, FactorScores, composite_score
 
 
 def test_composite_score_weighted_sum():

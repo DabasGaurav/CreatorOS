@@ -3,7 +3,7 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 
-from creatoros.embeddings import qdrant_client as qc
+from creatorsignal.embeddings import qdrant_client as qc
 
 VECTOR_SIZE = 8
 

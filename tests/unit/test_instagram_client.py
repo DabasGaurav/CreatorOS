@@ -2,7 +2,7 @@ import httpx
 import pytest
 import respx
 
-from creatoros.instagram.client import GraphAPIClient, GraphAPIError, RateLimitedError
+from creatorsignal.instagram.client import GraphAPIClient, GraphAPIError, RateLimitedError
 
 BASE = "https://graph.instagram.com/v23.0"
 
@@ -100,7 +100,7 @@ def test_get_account_profile_returns_username(client):
 
 @respx.mock
 def test_high_usage_header_triggers_warning_log(client, caplog, monkeypatch):
-    monkeypatch.setattr("creatoros.instagram.client.time.sleep", lambda _s: None)
+    monkeypatch.setattr("creatorsignal.instagram.client.time.sleep", lambda _s: None)
     usage_header = '{"123": [{"call_count": 85}]}'
     respx.get(f"{BASE}/123/media").mock(
         return_value=httpx.Response(

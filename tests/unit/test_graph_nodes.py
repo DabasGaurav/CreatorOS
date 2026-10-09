@@ -1,12 +1,12 @@
 import uuid
 
-from creatoros.graph import nodes as nodes_module
-from creatoros.graph.nodes import (
+from creatorsignal.graph import nodes as nodes_module
+from creatorsignal.graph.nodes import (
     baseline_node_factory,
     explore_exploit_node,
     ranking_node_factory,
 )
-from creatoros.graph.pipeline import build_pipeline
+from creatorsignal.graph.pipeline import build_pipeline
 
 
 class FakeQdrant:

@@ -1,7 +1,7 @@
 import pandas as pd
 import pytest
 
-from creatoros.research import trends_client
+from creatorsignal.research import trends_client
 
 
 def test_linear_slope_increasing_series():

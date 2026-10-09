@@ -1,6 +1,6 @@
 import pytest
 
-from creatoros.instagram import tester_admin
+from creatorsignal.instagram import tester_admin
 
 
 @pytest.fixture(autouse=True)

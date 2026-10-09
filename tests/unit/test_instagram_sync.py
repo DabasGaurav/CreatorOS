@@ -1,6 +1,6 @@
 from types import SimpleNamespace
 
-from creatoros.instagram import sync as sync_module
+from creatorsignal.instagram import sync as sync_module
 
 
 class FakeGraphClient:

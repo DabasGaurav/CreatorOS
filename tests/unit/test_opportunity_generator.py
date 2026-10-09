@@ -1,6 +1,6 @@
-from creatoros.opportunity import opportunity_generator as og
-from creatoros.opportunity.schemas import OpportunityCandidate, OpportunitySet
-from creatoros.research.schemas import ResearchEvidence
+from creatorsignal.opportunity import opportunity_generator as og
+from creatorsignal.opportunity.schemas import OpportunityCandidate, OpportunitySet
+from creatorsignal.research.schemas import ResearchEvidence
 
 
 def _evidence():

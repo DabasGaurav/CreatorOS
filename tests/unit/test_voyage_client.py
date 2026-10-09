@@ -1,6 +1,6 @@
 from types import SimpleNamespace
 
-from creatoros.embeddings import voyage_client
+from creatorsignal.embeddings import voyage_client
 
 
 def test_build_reel_embedding_text_joins_caption_and_transcript():

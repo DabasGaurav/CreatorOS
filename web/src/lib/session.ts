@@ -1,4 +1,4 @@
-const SESSION_KEY = "creatoros_session";
+const SESSION_KEY = "creatorsignal_session";
 
 export interface StoredSession {
   session_token: string;

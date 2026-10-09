@@ -1,6 +1,6 @@
 import random
 
-from creatoros.ranking.engagement_model import (
+from creatorsignal.ranking.engagement_model import (
     DEFAULT_NEUTRAL_PRIOR,
     MIN_TRAINING_EXAMPLES,
     TrainingRow,

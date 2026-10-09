@@ -1,6 +1,6 @@
 from types import SimpleNamespace
 
-from creatoros.outcome import outcome_tracking as ot
+from creatorsignal.outcome import outcome_tracking as ot
 
 
 def test_remap_cosine_to_unit_clamps():

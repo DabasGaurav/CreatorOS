@@ -6,8 +6,8 @@ creator or recommendation."""
 
 import pytest
 
-from creatoros.db.models import Creator, Outcome, Recommendation
-from creatoros.outcome.outcome_tracking import _oldest_unlinked_recommendation
+from creatorsignal.db.models import Creator, Outcome, Recommendation
+from creatorsignal.outcome.outcome_tracking import _oldest_unlinked_recommendation
 
 pytestmark = pytest.mark.integration
 

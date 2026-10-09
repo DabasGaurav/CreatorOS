@@ -10,10 +10,10 @@ Usage:
 import argparse
 import sys
 
-from creatoros.db.base import get_session
-from creatoros.db.models import Creator
-from creatoros.dna.job import compute_and_store_dna
-from creatoros.embeddings.qdrant_client import get_client
+from creatorsignal.db.base import get_session
+from creatorsignal.db.models import Creator
+from creatorsignal.dna.job import compute_and_store_dna
+from creatorsignal.embeddings.qdrant_client import get_client
 
 
 def main() -> int:

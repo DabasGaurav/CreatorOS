@@ -1,4 +1,4 @@
-# CreatorOS
+# CreatorSignal.ai
 
 An agentic recommendation system for a single Instagram Reels creator: what to create next, backed by evidence, generated on demand.
 

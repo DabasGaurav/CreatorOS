@@ -6,9 +6,9 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 
-from creatoros.db.models import Creator
-from creatoros.instagram.repository import attach_instagram_account, invite_creator
-from creatoros.security.crypto import decrypt_token
+from creatorsignal.db.models import Creator
+from creatorsignal.instagram.repository import attach_instagram_account, invite_creator
+from creatorsignal.security.crypto import decrypt_token
 
 pytestmark = pytest.mark.integration
 

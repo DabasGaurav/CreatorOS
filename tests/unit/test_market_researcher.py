@@ -1,6 +1,6 @@
-from creatoros.research import market_researcher as mr
-from creatoros.research.schemas import ResearchStep
-from creatoros.research.youtube_client import YouTubeNotConfigured
+from creatorsignal.research import market_researcher as mr
+from creatorsignal.research.schemas import ResearchStep
+from creatorsignal.research.youtube_client import YouTubeNotConfigured
 
 
 class FakeSession:

@@ -6,11 +6,11 @@ account or token."""
 
 import pytest
 
-from creatoros.db.models import Creator, CreatorDNA, Reel, ReelInsight
-from creatoros.dna.job import compute_and_store_dna
-from creatoros.embeddings.job import embed_and_upsert_all_reels_for_creator
-from creatoros.embeddings.qdrant_client import get_client
-from creatoros.instagram.sync import sync_creator_history
+from creatorsignal.db.models import Creator, CreatorDNA, Reel, ReelInsight
+from creatorsignal.dna.job import compute_and_store_dna
+from creatorsignal.embeddings.job import embed_and_upsert_all_reels_for_creator
+from creatorsignal.embeddings.qdrant_client import get_client
+from creatorsignal.instagram.sync import sync_creator_history
 
 pytestmark = pytest.mark.integration
 

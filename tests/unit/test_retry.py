@@ -1,6 +1,6 @@
 import pytest
 
-from creatoros.utils.retry import with_backoff
+from creatorsignal.utils.retry import with_backoff
 
 
 class FlakyError(Exception):
